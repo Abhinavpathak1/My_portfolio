@@ -1,17 +1,32 @@
-# Portfolio Admin
+# Portfolio admin and deployment
 
-Open `admin.html` on the same site to access the dashboard (serve the site on localhost or HTTPS rather than opening it as a `file://` page). On first use, create one admin ID and a password of at least 10 characters. The password is stored as a salted PBKDF2 hash in this browser.
+The admin dashboard uses server-side authentication and Vercel Postgres. There is no account-creation flow. The only admin ID is `pabhinav9001@gmail.com`; the password is never stored in the repository or browser storage.
 
-Use the dashboard sections to edit profile details, About copy, skills, certifications, projects, contact text, and footer links. List sections support adding and removing entries. Images should use filenames or paths relative to `index.html`. Save changes, then refresh the portfolio page to see them.
+## Vercel setup
 
-The **Messages** section lists contact messages submitted from this same browser and site origin. You can mark messages read/unread, reply through your email app, or delete entries. On contact-form submission, the message is saved in this browser and a `mailto:` draft is opened for `Pabhinav9001@gmail.com`; you still need to send the draft yourself. Browser-local messages are not delivered to the admin on another device or from other visitors.
+1. Push the project to GitHub and import the repository into Vercel. Keep the project root set to the repository root.
+2. Create a Postgres database from the Vercel Marketplace and connect it to the project. The Neon serverless driver reads `POSTGRES_URL` or `DATABASE_URL` from the integration.
+3. In **Project Settings → Environment Variables**, add:
+   - `ADMIN_PASSWORD`: choose a new, unique password of at least 16 characters. The password previously pasted into chat should be treated as exposed and must not be reused. Enter the replacement only in Vercel's private environment-variable settings.
+   - `SESSION_SECRET`: a cryptographically random secret of at least 32 characters. Generate it privately (for example, with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`); do not commit it.
+4. Enable the variables for the deployment environments you use, then redeploy. The API creates its tables on first use. It reports server errors rather than silently switching to local storage.
+5. Open `/admin.html`, sign in with the fixed admin ID and your private `ADMIN_PASSWORD`, then use the dashboard to edit and publish the shared content.
 
-## Storage and security
+The backend signs a 12-hour session cookie with `SESSION_SECRET`, marks it HttpOnly and SameSite=Strict, and checks admin authorization on every content-write and inbox-management request. Failed password attempts are rate limited per hashed client address. Keep Vercel and database access restricted to trusted operators.
 
-This is a frontend-only admin for local editing. Its login is not secure authentication: anyone who can access the deployed site can inspect or bypass frontend checks. Content changes, contact messages, and the admin account are stored in browser storage and are not shared with visitors or other devices. Do not use this for confidential information or as protection for a public deployment.
+## Local development
 
-To reset the admin ID and password in this browser, remove the `abhinav-portfolio-admin-account` entry from local storage for the site. To discard local content edits and restore the built-in content, remove `abhinav-portfolio-content` from local storage.
+Install dependencies with `npm install`, connect a development Postgres database, and provide `POSTGRES_URL`, `ADMIN_PASSWORD`, and `SESSION_SECRET` as local environment variables. Run the project with `npx vercel dev` so API routes and static pages share the same origin. Do not add local secrets to tracked files.
 
-To clear locally stored contact messages, remove `abhinav-portfolio-messages` from local storage for the site.
+## Content and contact messages
 
-To publish content for everyone, update the defaults in `portfolio-data.js` and redeploy the site. Shared publishing with secure access requires server-side authentication and persistent storage.
+The built-in content in `portfolio-data.js` is shown until the first admin save. Thereafter, visitors and the admin dashboard use the shared Postgres content. Images still need to exist in the deployed site; the editor accepts image paths but does not upload files.
+
+Contact submissions are validated and stored in the shared database and appear in the authenticated dashboard inbox. Reply opens the admin's email app. On submission the visitor's browser also prepares a `mailto:` draft addressed to the contact email; no email is sent automatically. Messages are limited to 10,000 characters.
+
+## Troubleshooting
+
+- A database/API error means the required Vercel database connection is missing or unavailable; check the Vercel function logs and database integration variables.
+- A sign-in configuration error means `ADMIN_PASSWORD` or `SESSION_SECRET` is missing or below its minimum length. Add the private variable and redeploy.
+- The public portfolio shows its built-in preview with a visible warning if its shared content API cannot be reached.
+- To change the password, update `ADMIN_PASSWORD` in Vercel and redeploy. Changing `SESSION_SECRET` invalidates existing sessions.

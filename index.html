@@ -9,6 +9,7 @@
   </head>
   <body>
     <div class="js-container"></div>
+    <p id="portfolio-data-status" class="portfolio-data-status" role="alert" hidden></p>
 
     <script src="https://unpkg.com/supersimpledev@8.6.4/external-library.js"></script>
     <script src="https://unpkg.com/supersimpledev/react.js"></script>
@@ -16,7 +17,7 @@
     <script src="https://unpkg.com/supersimpledev/babel.js"></script>
 
     <script type="text/babel">
-      const portfolio = window.loadPortfolioData();
+      let portfolio = window.portfolioDefaults;
 
       /* ── Smooth scroll helper ── */
       function scrollToSection(id) {
@@ -153,29 +154,28 @@
         );
       }
 
-      function submitContactMessage(event) {
+      async function submitContactMessage(event) {
         event.preventDefault();
         const form = event.currentTarget;
         const email = form.elements.email.value.trim();
         const messageText = form.elements.message.value.trim();
         const status = document.getElementById('contact-status');
         const emailAddress = portfolio.footer.email.replace(/^mailto:/, '');
+        const submitButton = form.querySelector('button[type="submit"]');
 
+        submitButton.disabled = true;
+        status.textContent = 'Saving your message…';
         try {
-          window.savePortfolioMessage({
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            email,
-            message: messageText,
-            createdAt: new Date().toISOString(),
-            read: false
-          });
-          status.textContent = 'Message saved in this browser. Review the email draft addressed to Abhinav and send it from your email app.';
+          await window.savePortfolioMessage({ email, message: messageText });
+          status.textContent = 'Message saved. Review the email draft and send it from your email app.';
           const subject = encodeURIComponent('Portfolio contact message');
           const body = encodeURIComponent(`From: ${email}\n\n${messageText}`);
           window.location.href = `mailto:${emailAddress}?subject=${subject}&body=${body}`;
           form.reset();
         } catch (error) {
-          status.textContent = `Could not save your message in this browser: ${error.message}`;
+          status.textContent = `Could not save your message: ${error.message}`;
+        } finally {
+          submitButton.disabled = false;
         }
       }
 
@@ -325,25 +325,38 @@
       }
 
       /* ── APP ── */
-      const App = (
-        <div className="app-root">
-          <Navbar />
-          <Profile />
-          <main>
-            <div className="content-grid">
-              <About />
-              <Skills />
-              <Projects />
-              <Certifications />
-              <Feedback />
-            </div>
-          </main>
-          <Footer />
-        </div>
-      );
+      function App() {
+        return (
+          <div className="app-root">
+            <Navbar />
+            <Profile />
+            <main>
+              <div className="content-grid">
+                <About />
+                <Skills />
+                <Projects />
+                <Certifications />
+                <Feedback />
+              </div>
+            </main>
+            <Footer />
+          </div>
+        );
+      }
 
       const container = document.querySelector('.js-container');
-      ReactDOM.createRoot(container).render(App);
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
+      window.loadPortfolioData().then(data => {
+        portfolio = data;
+        document.getElementById('portfolio-data-status').hidden = true;
+        root.render(<App />);
+      }).catch(error => {
+        console.error('Unable to load shared portfolio content:', error);
+        const status = document.getElementById('portfolio-data-status');
+        status.textContent = 'Live portfolio content could not be loaded from the server. The built-in preview is shown; please try again later.';
+        status.hidden = false;
+      });
 
     </script>
   </body>

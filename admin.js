@@ -1,6 +1,4 @@
 (function () {
-  const accountKey = "abhinav-portfolio-admin-account";
-  const sessionKey = "abhinav-portfolio-admin-session";
   const sectionNames = {
     profile: "Profile",
     about: "About",
@@ -20,17 +18,35 @@
 
   const authScreen = document.getElementById("auth-screen");
   const authForm = document.getElementById("auth-form");
-  const authTitle = document.getElementById("auth-title");
-  const authDescription = document.getElementById("auth-description");
   const authSubmit = document.getElementById("auth-submit");
   const authMessage = document.getElementById("auth-message");
-  const authConfirm = document.getElementById("auth-confirm");
-  const confirmLabel = document.getElementById("confirm-label");
   const dashboard = document.getElementById("dashboard");
   const editorForm = document.getElementById("editor-form");
-  let content = window.loadPortfolioData();
+  let content = window.portfolioDefaults;
+  let messages = [];
   let currentView = "overview";
-  let adminId = "";
+
+  async function apiRequest(path, options = {}) {
+    const response = await fetch(path, {
+      credentials: "same-origin",
+      ...options,
+      headers: { Accept: "application/json", ...(options.headers || {}) }
+    });
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error("The server returned an invalid response. Make sure the admin API is deployed.");
+    }
+    if (!response.ok) throw new Error(result.error || "The request could not be completed.");
+    return result;
+  }
+
+  function showDashboardStatus(message) {
+    const status = document.getElementById("dashboard-status");
+    status.textContent = message || "";
+    status.hidden = !message;
+  }
 
   function escapeHtml(value) {
     return String(value)
@@ -133,7 +149,7 @@
       return;
     }
     if (view === "messages") {
-      renderMessages();
+      refreshMessages().catch(error => showDashboardStatus(`Could not load messages: ${error.message}`));
       return;
     }
 
@@ -144,12 +160,11 @@
       : view === "profile"
         ? `${renderPrimitive(content.brand, "brand", "Portfolio brand")}${renderObject(content.profile, "profile")}`
         : renderObject(content[view], view);
-    editorForm.innerHTML = `<p class="editor-intro">Changes are kept locally in this browser. Image paths should point to files available beside your portfolio page.</p>${blocks}<div class="save-row"><span id="save-message" class="save-message" role="status"></span><button class="primary-button save-button" type="submit">Save changes</button></div>`;
+    editorForm.innerHTML = `<p class="editor-intro">Changes are saved to the shared portfolio database. Image paths should point to files available beside your portfolio page.</p>${blocks}<div class="save-row"><span id="save-message" class="save-message" role="status"></span><button class="primary-button save-button" type="submit">Save changes</button></div>`;
   }
 
   function renderOverview() {
     const certificateCount = content.certifications.groups.reduce((total, group) => total + group.items.length, 0);
-    const messages = window.loadPortfolioMessages();
     const unreadCount = messages.filter(message => !message.read).length;
     const navCount = document.getElementById("messages-nav-count");
     navCount.hidden = unreadCount === 0;
@@ -182,7 +197,6 @@
   }
 
   function renderMessages() {
-    const messages = window.loadPortfolioMessages();
     const list = document.getElementById("messages-list");
     const empty = document.getElementById("messages-empty");
     const navCount = document.getElementById("messages-nav-count");
@@ -212,57 +226,39 @@
     }).join("");
   }
 
-  function encodePassword(password, salt) {
-    if (!window.crypto || !window.crypto.subtle) {
-      return Promise.reject(new Error("Password setup requires HTTPS or localhost with browser cryptography enabled."));
-    }
-    const keyMaterial = new TextEncoder().encode(password);
-    return window.crypto.subtle.importKey("raw", keyMaterial, "PBKDF2", false, ["deriveBits"])
-      .then(key => window.crypto.subtle.deriveBits({
-        name: "PBKDF2",
-        salt,
-        iterations: 150000,
-        hash: "SHA-256"
-      }, key, 256))
-      .then(bits => Array.from(new Uint8Array(bits), byte => byte.toString(16).padStart(2, "0")).join(""));
+  async function refreshMessages() {
+    messages = await window.loadPortfolioMessages();
+    renderMessages();
   }
 
-  function createSalt() {
-    const bytes = new Uint8Array(16);
-    window.crypto.getRandomValues(bytes);
-    return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
-  }
-
-  function hexToBytes(hex) {
-    return new Uint8Array(hex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-  }
-
-  function setSetupMode(setup) {
-    authTitle.textContent = setup ? "Create your admin login" : "Welcome back";
-    authDescription.textContent = setup
-      ? "Set the one admin ID and password for this browser."
-      : "Sign in to manage your portfolio content.";
-    authSubmit.textContent = setup ? "Create admin login" : "Sign in";
-    authConfirm.hidden = !setup;
-    authConfirm.required = setup;
-    confirmLabel.hidden = !setup;
-    document.getElementById("auth-password").autocomplete = setup ? "new-password" : "current-password";
-    document.getElementById("auth-id").autocomplete = setup ? "username" : "username";
-  }
-
-  function showDashboard() {
-    adminId = JSON.parse(localStorage.getItem(accountKey)).username;
-    document.getElementById("admin-name").textContent = adminId;
+  async function showDashboard(email) {
+    document.getElementById("admin-name").textContent = email;
     authScreen.hidden = true;
     dashboard.hidden = false;
+    showDashboardStatus("");
+    try {
+      content = await window.loadPortfolioData();
+    } catch (error) {
+      dashboard.hidden = true;
+      authScreen.hidden = false;
+      authMessage.textContent = `Could not load saved portfolio content: ${error.message}`;
+      return;
+    }
+    try {
+      messages = await window.loadPortfolioMessages();
+    } catch (error) {
+      messages = [];
+      showDashboardStatus(`Could not load contact messages: ${error.message}`);
+    }
     renderEditor("overview");
   }
 
-  function bindAuthentication() {
-    const accountExists = Boolean(localStorage.getItem(accountKey));
-    setSetupMode(!accountExists);
-    if (sessionStorage.getItem(sessionKey) === "authenticated" && accountExists) {
-      showDashboard();
+  async function bindAuthentication() {
+    try {
+      const session = await apiRequest("/api/auth/session");
+      if (session.authenticated) await showDashboard(session.email);
+    } catch (error) {
+      authMessage.textContent = `Unable to check admin sign-in: ${error.message}`;
     }
   }
 
@@ -271,28 +267,19 @@
     authMessage.textContent = "";
     const username = authForm.elements.username.value.trim();
     const password = authForm.elements.password.value;
-    const accountText = localStorage.getItem(accountKey);
+    authSubmit.disabled = true;
     try {
-      if (!accountText) {
-        if (password !== authConfirm.value) {
-          authMessage.textContent = "The passwords do not match.";
-          return;
-        }
-        const salt = createSalt();
-        const passwordHash = await encodePassword(password, hexToBytes(salt));
-        localStorage.setItem(accountKey, JSON.stringify({ username, salt, passwordHash }));
-      } else {
-        const account = JSON.parse(accountText);
-        const passwordHash = await encodePassword(password, hexToBytes(account.salt));
-        if (username !== account.username || passwordHash !== account.passwordHash) {
-          authMessage.textContent = "The admin ID or password is incorrect.";
-          return;
-        }
-      }
-      sessionStorage.setItem(sessionKey, "authenticated");
-      showDashboard();
+      const session = await apiRequest("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      authForm.reset();
+      await showDashboard(session.email);
     } catch (error) {
-      authMessage.textContent = error.message || "Unable to authenticate in this browser.";
+      authMessage.textContent = error.message || "Unable to sign in.";
+    } finally {
+      authSubmit.disabled = false;
     }
   });
 
@@ -301,18 +288,23 @@
     if (button) renderEditor(button.dataset.view);
   });
 
-  document.addEventListener("click", event => {
+  document.addEventListener("click", async event => {
     const messageAction = event.target.closest("[data-message-action]");
     if (messageAction) {
       const id = messageAction.dataset.messageId;
-      if (messageAction.dataset.messageAction === "delete") {
-        window.deletePortfolioMessage(id);
-      } else if (messageAction.dataset.messageAction === "mark-read") {
-        window.markPortfolioMessageRead(id);
-      } else {
-        window.markPortfolioMessageUnread(id);
+      messageAction.disabled = true;
+      try {
+        if (messageAction.dataset.messageAction === "delete") {
+          await window.deletePortfolioMessage(id);
+        } else {
+          await window.updatePortfolioMessage(id, messageAction.dataset.messageAction === "mark-read");
+        }
+        await refreshMessages();
+        showDashboardStatus("");
+      } catch (error) {
+        showDashboardStatus(`Could not update message: ${error.message}`);
+        messageAction.disabled = false;
       }
-      renderMessages();
       return;
     }
     const openButton = event.target.closest("[data-open-view]");
@@ -342,34 +334,50 @@
     }
   });
 
-  editorForm.addEventListener("submit", event => {
+  editorForm.addEventListener("submit", async event => {
     event.preventDefault();
     const updated = JSON.parse(JSON.stringify(content));
     new FormData(editorForm).forEach((value, path) => setAtPath(updated, path, value));
+    const saveButton = editorForm.querySelector(".save-button");
+    saveButton.disabled = true;
     try {
-      window.savePortfolioData(updated);
+      await window.savePortfolioData(updated);
       content = updated;
       renderEditor(currentView);
       const message = document.getElementById("save-message");
-      if (message) message.textContent = "Changes saved in this browser.";
+      if (message) message.textContent = "Changes saved and published.";
     } catch (error) {
       const message = document.getElementById("save-message");
       if (message) message.textContent = `Could not save changes: ${error.message}`;
+      saveButton.disabled = false;
     }
   });
 
-  document.getElementById("discard-button").addEventListener("click", () => {
-    content = window.loadPortfolioData();
-    renderEditor(currentView);
+  document.getElementById("discard-button").addEventListener("click", async () => {
+    try {
+      content = await window.loadPortfolioData();
+      renderEditor(currentView);
+      showDashboardStatus("");
+    } catch (error) {
+      showDashboardStatus(`Could not reload saved content: ${error.message}`);
+    }
   });
 
-  document.getElementById("logout-button").addEventListener("click", () => {
-    sessionStorage.removeItem(sessionKey);
-    dashboard.hidden = true;
-    authScreen.hidden = false;
-    authForm.reset();
-    authMessage.textContent = "";
-    setSetupMode(false);
+  document.getElementById("logout-button").addEventListener("click", async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await apiRequest("/api/auth/logout", { method: "POST" });
+      dashboard.hidden = true;
+      authScreen.hidden = false;
+      authForm.reset();
+      authMessage.textContent = "";
+      showDashboardStatus("");
+    } catch (error) {
+      showDashboardStatus(`Unable to sign out: ${error.message}`);
+    } finally {
+      button.disabled = false;
+    }
   });
 
   bindAuthentication();

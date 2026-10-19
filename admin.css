@@ -27,6 +27,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 3px solid rgba(53, 121, 232, .3); outline-offset: 2px; }
+.dashboard-status {
+  margin: 0 0 20px;
+  border: 1px solid #f0c36d;
+  border-radius: 9px;
+  background: #fff8e8;
+  color: #704d13;
+  padding: 12px 15px;
+  font-size: .82rem;
+}
+.auth-card input[readonly] { background: #f6f8fb; color: #56647a; }
+button:disabled { cursor: wait; opacity: .7; }
 
 .auth-screen {
   display: grid;

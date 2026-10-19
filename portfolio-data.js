@@ -1,7 +1,67 @@
-(function () {
-  const storageKey = "abhinav-portfolio-content";
-  const messageStorageKey = "abhinav-portfolio-messages";
-
+(function (root, factory) {
+  const defaults = factory();
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = defaults;
+  }
+  if (!root) return;
+  root.portfolioDefaults = defaults;
+  async function readResponse(response) {
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error("The server returned an invalid response. Make sure the portfolio API is deployed.");
+    }
+    if (!response.ok) throw new Error(result.error || "The server could not complete the request.");
+    return result;
+  }
+  root.loadPortfolioData = async function () {
+    const response = await fetch("/api/content", { headers: { Accept: "application/json" } });
+    const result = await readResponse(response);
+    return result.content;
+  };
+  root.savePortfolioData = async function (data) {
+    const response = await fetch("/api/admin/content", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: data })
+    });
+    await readResponse(response);
+  };
+  root.loadPortfolioMessages = async function () {
+    const response = await fetch("/api/admin/messages", {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" }
+    });
+    const result = await readResponse(response);
+    return result.messages;
+  };
+  root.savePortfolioMessage = async function (message) {
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message)
+    });
+    await readResponse(response);
+  };
+  root.updatePortfolioMessage = async function (messageId, read) {
+    const response = await fetch(`/api/admin/messages/${encodeURIComponent(messageId)}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ read })
+    });
+    await readResponse(response);
+  };
+  root.deletePortfolioMessage = async function (messageId) {
+    const response = await fetch(`/api/admin/messages/${encodeURIComponent(messageId)}`, {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+    await readResponse(response);
+  };
+})(typeof window === "undefined" ? null : window, function () {
   const defaults = {
     brand: "Abhinav.dev",
     profile: {
@@ -12,7 +72,7 @@
         { label: "NAME", value: "Abhinav Pathak" },
         { label: "DOB", value: "15th September 2005" },
         { label: "PHONE", value: "+91 9302514236" },
-        { label: "EMAIL", value: "Pabhinav9001@gmail.com", href: "mailto:Pabhinav9001@gmail.com" },
+        { label: "EMAIL", value: "pabhinav9001@gmail.com", href: "mailto:pabhinav9001@gmail.com" },
         { label: "ADDRESS", value: "NH-1/B-196 NTPC Colony Vindhyanagar" },
         {
           label: "LINKEDIN",
@@ -133,43 +193,10 @@
     footer: {
       name: "<Abhinav Pathak />",
       copy: "© 2025 · Built with React · All rights reserved",
-      email: "mailto:Pabhinav9001@gmail.com",
+      email: "mailto:pabhinav9001@gmail.com",
       linkedin: "https://www.linkedin.com/in/Abhinav-Pathak-aa6a35233/",
       github: "https://github.com"
     }
   };
-
-  window.portfolioDefaults = defaults;
-  window.loadPortfolioData = function () {
-    const stored = localStorage.getItem(storageKey);
-    return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(defaults));
-  };
-  window.savePortfolioData = function (data) {
-    localStorage.setItem(storageKey, JSON.stringify(data));
-  };
-  window.loadPortfolioMessages = function () {
-    const stored = localStorage.getItem(messageStorageKey);
-    return stored ? JSON.parse(stored) : [];
-  };
-  window.savePortfolioMessage = function (message) {
-    const messages = window.loadPortfolioMessages();
-    messages.unshift(message);
-    localStorage.setItem(messageStorageKey, JSON.stringify(messages));
-  };
-  window.deletePortfolioMessage = function (messageId) {
-    const messages = window.loadPortfolioMessages().filter(message => message.id !== messageId);
-    localStorage.setItem(messageStorageKey, JSON.stringify(messages));
-  };
-  window.markPortfolioMessageRead = function (messageId) {
-    const messages = window.loadPortfolioMessages().map(message =>
-      message.id === messageId ? { ...message, read: true } : message
-    );
-    localStorage.setItem(messageStorageKey, JSON.stringify(messages));
-  };
-  window.markPortfolioMessageUnread = function (messageId) {
-    const messages = window.loadPortfolioMessages().map(message =>
-      message.id === messageId ? { ...message, read: false } : message
-    );
-    localStorage.setItem(messageStorageKey, JSON.stringify(messages));
-  };
-})();
+  return defaults;
+});

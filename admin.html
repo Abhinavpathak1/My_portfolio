@@ -18,15 +18,13 @@
         <p id="auth-description" class="muted">Sign in to manage your portfolio content.</p>
         <form id="auth-form">
           <label for="auth-id">Admin ID</label>
-          <input id="auth-id" name="username" autocomplete="username" required />
+          <input id="auth-id" name="username" type="email" value="pabhinav9001@gmail.com" autocomplete="username" readonly required />
           <label for="auth-password">Password</label>
-          <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="10" required />
-          <label id="confirm-label" for="auth-confirm" hidden>Confirm password</label>
-          <input id="auth-confirm" name="confirm" type="password" autocomplete="new-password" minlength="10" hidden />
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="16" maxlength="1024" required />
           <button id="auth-submit" class="primary-button" type="submit">Sign in</button>
           <p id="auth-message" class="form-message" role="alert"></p>
         </form>
-        <p class="security-note">This frontend-only login, content edits, and contact inbox are stored in this browser. They do not protect the site on a public server or sync to visitors.</p>
+        <p class="security-note">Admin access is verified on the server. Portfolio edits and contact messages are stored in the shared database.</p>
       </section>
     </div>
 
@@ -53,6 +51,7 @@
           <div class="admin-user"><span class="avatar">AP</span><span><strong id="admin-name">Admin</strong><small>Administrator</small></span><button id="logout-button" class="logout-button" type="button">Sign out</button></div>
         </header>
         <main class="content-area">
+          <p id="dashboard-status" class="dashboard-status" role="alert" hidden></p>
           <section id="overview-view" class="dashboard-view">
             <div class="page-heading">
               <div><p class="eyebrow">YOUR CONTENT, AT A GLANCE</p><h1>Dashboard</h1><p class="muted">Manage the information displayed on your portfolio.</p></div>
@@ -74,7 +73,7 @@
                 </div>
               </section>
             </div>
-            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Changes are saved to this browser only. To publish updates to everyone, edit the source data and redeploy your site.</p>
+            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Changes are saved to the shared portfolio database and published to visitors.</p>
           </section>
           <section id="editor-view" class="dashboard-view" hidden>
             <div class="page-heading">
@@ -82,16 +81,16 @@
               <button id="discard-button" class="secondary-button" type="button">Discard changes</button>
             </div>
             <form id="editor-form" class="panel editor-panel"></form>
-            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Saved changes appear on the portfolio in this browser after refresh.</p>
+            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Saved changes appear on the live portfolio after refresh.</p>
           </section>
           <section id="messages-view" class="dashboard-view" hidden>
             <div class="page-heading">
-              <div><p class="eyebrow">CONTACT INBOX</p><h1>Messages</h1><p class="muted">Messages submitted from this browser are stored here.</p></div>
-              <a class="secondary-button" href="mailto:Pabhinav9001@gmail.com">Email Abhinav <span aria-hidden="true">↗</span></a>
+              <div><p class="eyebrow">CONTACT INBOX</p><h1>Messages</h1><p class="muted">Messages submitted from the portfolio are stored here.</p></div>
+              <a class="secondary-button" href="mailto:pabhinav9001@gmail.com">Email Abhinav <span aria-hidden="true">↗</span></a>
             </div>
             <div id="messages-list" class="messages-list"></div>
-            <p id="messages-empty" class="panel messages-empty" hidden>No messages yet. Messages submitted from this same browser will appear here.</p>
-            <p class="storage-note"><span aria-hidden="true">ⓘ</span> This is a local browser inbox. It does not receive messages from visitors on other devices or automatically send email. Use localhost or HTTPS so the portfolio and admin share browser storage.</p>
+            <p id="messages-empty" class="panel messages-empty" hidden>No messages have been submitted yet.</p>
+            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Messages are stored in the shared database. Reply opens your email app; it does not send email automatically.</p>
           </section>
         </main>
       </div>

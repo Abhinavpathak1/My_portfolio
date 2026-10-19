@@ -1,0 +1,14 @@
+{
+  "name": "abhinav-portfolio",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2"
+  },
+  "scripts": {
+    "dev": "npx vercel dev"
+  }
+}
