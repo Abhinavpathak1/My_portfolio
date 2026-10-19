@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
+    <script src="portfolio-data.js"></script>
   </head>
   <body>
     <div class="js-container"></div>
@@ -15,35 +16,38 @@
     <script src="https://unpkg.com/supersimpledev/babel.js"></script>
 
     <script type="text/babel">
+      const portfolio = window.loadPortfolioData();
 
       /* ── Smooth scroll helper ── */
-      function scrollTo(id) {
+      function scrollToSection(id) {
         const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+        if (el) el.scrollIntoView({ behavior });
       }
 
       /* ── NAVBAR ── */
       function Navbar() {
         return (
           <nav id="navbar">
-            <div id="portfolio-title">
-              <span class="nav-bracket">&lt;</span>
-              <h1>Abhinav.dev</h1>
-              <span class="nav-bracket">/&gt;</span>
-            </div>
-            <button class="hamburger" id="hamburger-btn" onClick={() => {
+            <a id="portfolio-title" href="#section-profile" aria-label="Abhinav Pathak home">
+              <span className="brand-mark">AP</span>
+              <span className="brand-name">{portfolio.profile.details[0].value}</span>
+            </a>
+            <button className="hamburger" id="hamburger-btn" aria-label="Toggle navigation" aria-expanded="false" onClick={() => {
               const menu = document.getElementById('nav-menu');
-              menu.classList.toggle('open');
+              const isOpen = menu.classList.toggle('open');
+              document.getElementById('hamburger-btn').setAttribute('aria-expanded', String(isOpen));
             }}>
               <span></span><span></span><span></span>
             </button>
             <div id="nav-menu">
-              <button onClick={() => scrollTo('section-profile')}>Profile</button>
-              <button onClick={() => scrollTo('section-about')}>About</button>
-              <button onClick={() => scrollTo('section-skills')}>Skills</button>
-              <button onClick={() => scrollTo('section-certs')}>Certs</button>
-              <button onClick={() => scrollTo('section-projects')}>Projects</button>
-              <button onClick={() => scrollTo('section-feedback')} class="nav-cta">Contact</button>
+              <button onClick={() => scrollToSection('section-profile')}>Home</button>
+              <button onClick={() => scrollToSection('section-about')}>About</button>
+              <button onClick={() => scrollToSection('section-skills')}>Skills</button>
+              <button onClick={() => scrollToSection('section-projects')}>Projects</button>
+              <button onClick={() => scrollToSection('section-certs')}>Certificates</button>
+              <button onClick={() => scrollToSection('section-feedback')} className="nav-cta">Contact</button>
+              <a className="admin-login-link" href="admin.html">Admin Login</a>
             </div>
           </nav>
         );
@@ -51,55 +55,45 @@
 
       /* ── HERO / PROFILE ── */
       function Profile() {
+        const name = portfolio.profile.details.find(item => item.label === 'NAME')?.value || portfolio.brand;
+        const contactDetails = portfolio.profile.details.filter(item => item.label !== 'NAME' && item.label !== 'DOB');
         return (
-          <section id="section-profile" class="section">
-            <div class="section-header">
-              <span class="section-tag">01</span>
-              <h2>Profile</h2>
-            </div>
-            <p class="section-sub">Full-Stack AI Engineer · Cybersecurity Analyst · Android Developer</p>
-
-            <div class="profile-card">
-              <div class="profile-img-wrap">
-                <img src="Profileimg.jpeg" id="profile-image" alt="Abhinav Pathak" />
-                <div class="profile-img-ring"></div>
-                <div class="status-dot"></div>
+          <section id="section-profile" className="hero-section">
+            <div className="hero-copy">
+              <p className="hero-kicker">{portfolio.profile.subtitle}</p>
+              <h1>Hi, I’m <span>{name}</span></h1>
+              <p className="hero-intro">{portfolio.profile.welcome.replace(/^>\s*/, '').replace(/_$/, '')}</p>
+              <div className="hero-actions">
+                <button className="hero-primary" onClick={() => scrollToSection('section-projects')}>View My Projects <span aria-hidden="true">→</span></button>
+                <button className="hero-secondary" onClick={() => scrollToSection('section-feedback')}>Get in touch</button>
               </div>
-
-              <div class="profile-info">
-                <p class="profile-welcome">&gt; Welcome to my portfolio_</p>
-                <div class="profile-grid">
-                  <div class="profile-item">
-                    <span class="label">NAME</span>
-                    <span class="value">Abhinav Pathak</span>
-                  </div>
-                  <div class="profile-item">
-                    <span class="label">DOB</span>
-                    <span class="value">15th September 2005</span>
-                  </div>
-                  <div class="profile-item">
-                    <span class="label">PHONE</span>
-                    <span class="value">+91 9302514236</span>
-                  </div>
-                  <div class="profile-item">
-                    <span class="label">EMAIL</span>
-                    <span class="value"><a href="mailto:Pabhinav9001@gmail.com">Pabhinav9001@gmail.com</a></span>
-                  </div>
-                  <div class="profile-item full">
-                    <span class="label">ADDRESS</span>
-                    <span class="value">NH-1/B-196 NTPC Colony Vindhyanagar</span>
-                  </div>
-                  <div class="profile-item full">
-                    <span class="label">LINKEDIN</span>
-                    <span class="value">
-                      <a href="https://www.linkedin.com/in/Abhinav-Pathak-aa6a35233/" target="_blank">
-                        linkedin.com/in/Abhinav-Pathak-aa6a35233
-                      </a>
+            </div>
+            <div className="hero-portrait">
+              <div className="profile-img-wrap">
+                <img src={portfolio.profile.image} id="profile-image"
+                  alt={name} />
+              </div>
+              <span className="portrait-accent" aria-hidden="true"></span>
+            </div>
+            <aside className="hero-contact-card" aria-label="Profile details">
+              <p className="hero-card-title">Profile details</p>
+              {contactDetails.map(item => (
+                <div className="hero-contact-item" key={item.label}>
+                  <span className="contact-icon" aria-hidden="true">
+                    {item.label === 'EMAIL' ? '✉' : item.label === 'PHONE' ? '⌕' : item.label === 'LINKEDIN' ? 'in' : '⌖'}
+                  </span>
+                  <span className="hero-contact-copy">
+                    <span className="label">{item.label}</span>
+                    <span className="value">
+                      {item.href
+                        ? <a href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">{item.value}</a>
+                        : item.value}
                     </span>
-                  </div>
+                  </span>
                 </div>
-              </div>
-            </div>
+              ))}
+              <div className="availability"><span></span> Available for opportunities</div>
+            </aside>
           </section>
         );
       }
@@ -107,33 +101,26 @@
       /* ── ABOUT ── */
       function About() {
         return (
-          <section id="section-about" class="section">
-            <div class="section-header">
-              <span class="section-tag">02</span>
+          <section id="section-about" className="section">
+            <div className="section-header">
+              <span className="section-tag">02</span>
               <h2>About</h2>
             </div>
-            <p class="section-sub">Background, philosophy, and what drives me.</p>
-            <div class="about-card">
-              <div class="about-terminal-bar">
+            <p className="section-sub">{portfolio.about.subtitle}</p>
+            <div className="about-card">
+              <div className="about-terminal-bar">
                 <span></span><span></span><span></span>
-                <span class="terminal-title">about.md</span>
+                <span className="terminal-title">about.md</span>
               </div>
-              <div class="about-body">
-                <p>
-                  I am a <strong>full-stack AI engineer</strong> building secure, production-grade applications
-                  across web, mobile, and backend systems. My expertise includes computer vision pipelines,
-                  facial recognition systems, fraud detection architectures, and IAM solution design.
-                </p>
-                <p>
-                  I develop backend systems in <strong>Python</strong>, Android applications using
-                  <strong> Java and Kotlin</strong>, and responsive web platforms using <strong>React</strong>.
-                  I specialize in integrating machine learning models into scalable application architectures
-                  while ensuring encryption, access control, and system integrity.
-                </p>
-                <p>
-                  I focus on engineering solutions that are not only intelligent, but
-                  <strong> secure, scalable, and deployment-ready.</strong>
-                </p>
+              <div className="about-body">
+                {portfolio.about.paragraphs.map((paragraph, index) => (
+                  <p key={index}>
+                    {paragraph.split(/(full-stack AI engineer|Python|Java and Kotlin|React|secure, scalable, and deployment-ready\.)/g)
+                      .map((part, partIndex) => /^(full-stack AI engineer|Python|Java and Kotlin|React|secure, scalable, and deployment-ready\.)$/.test(part)
+                        ? <strong key={partIndex}>{part}</strong>
+                        : part)}
+                  </p>
+                ))}
               </div>
             </div>
           </section>
@@ -143,8 +130,8 @@
       /* ── SKILLS ── */
       function SkillItem({ icon, label }) {
         return (
-          <div class="skill-item">
-            <span class="skill-icon">{icon}</span>
+          <div className="skill-item">
+            <span className="skill-icon">{icon}</span>
             <span>{label}</span>
           </div>
         );
@@ -152,37 +139,57 @@
 
       function Skills() {
         return (
-          <section id="section-skills" class="section">
-            <div class="section-header">
-              <span class="section-tag">03</span>
+          <section id="section-skills" className="section">
+            <div className="section-header">
+              <span className="section-tag">03</span>
               <h2>Skills</h2>
             </div>
-            <p class="section-sub">Technologies, tools, and languages I work with.</p>
-            <div class="skills-grid">
-              <SkillItem icon="⚡" label="Python · Java · C++" />
-              <SkillItem icon="🌐" label="HTML · CSS · JavaScript · React" />
-              <SkillItem icon="🗄️" label="MySQL · Firebase" />
-              <SkillItem icon="🔧" label="Git · GitHub · Android Studio · VS Code" />
-              <SkillItem icon="📱" label="Android SDK · Kotlin · Java" />
-              <SkillItem icon="🔐" label="Ethical Hacking · IAM · Cybersecurity" />
-              <SkillItem icon="🤖" label="Computer Vision · ML · Deep Learning" />
-              <SkillItem icon="🗣️" label="English · Hindi" />
+            <p className="section-sub">{portfolio.skills.subtitle}</p>
+            <div className="skills-grid">
+              {portfolio.skills.items.map((skill, index) =>
+                <SkillItem key={index} icon={skill.icon} label={skill.label} />)}
             </div>
           </section>
         );
       }
 
+      function submitContactMessage(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const email = form.elements.email.value.trim();
+        const messageText = form.elements.message.value.trim();
+        const status = document.getElementById('contact-status');
+        const emailAddress = portfolio.footer.email.replace(/^mailto:/, '');
+
+        try {
+          window.savePortfolioMessage({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            email,
+            message: messageText,
+            createdAt: new Date().toISOString(),
+            read: false
+          });
+          status.textContent = 'Message saved in this browser. Review the email draft addressed to Abhinav and send it from your email app.';
+          const subject = encodeURIComponent('Portfolio contact message');
+          const body = encodeURIComponent(`From: ${email}\n\n${messageText}`);
+          window.location.href = `mailto:${emailAddress}?subject=${subject}&body=${body}`;
+          form.reset();
+        } catch (error) {
+          status.textContent = `Could not save your message in this browser: ${error.message}`;
+        }
+      }
+
       /* ── CERT CARD ── */
       function CertCard({ image, title, from, description, index }) {
         return (
-          <div class="cert-card" style={{ animationDelay: `${index * 0.08}s` }}>
-            <div class="cert-img-wrap">
+          <div className="cert-card" style={{ animationDelay: `${index * 0.08}s` }}>
+            <div className="cert-img-wrap">
               <img src={image} alt={title} />
-              <div class="cert-img-overlay">
-                <span class="cert-from-badge">{from}</span>
+              <div className="cert-img-overlay">
+                <span className="cert-from-badge">{from}</span>
               </div>
             </div>
-            <div class="cert-body">
+            <div className="cert-body">
               <h5>{title}</h5>
               <h6>{from}</h6>
               <p>{description}</p>
@@ -194,79 +201,70 @@
       /* ── CERTIFICATIONS ── */
       function Certifications() {
         return (
-          <section id="section-certs" class="section">
-            <div class="section-header">
-              <span class="section-tag">04</span>
+          <section id="section-certs" className="section">
+            <div className="section-header">
+              <span className="section-tag">04</span>
               <h2>Certifications</h2>
             </div>
-            <p class="section-sub">Courses and virtual internships I have completed.</p>
-
-            <h3 class="cert-group-label">▸ Course Certifications</h3>
-            <div class="cert-grid">
-              <CertCard index={0} image="certi1.jpeg" title="Android Development" from="Teachnook"
-                description="Completed a full-stack Android development certification covering core SDK, architecture patterns, and deployment-ready practices." />
-              <CertCard index={1} image="certi2.jpeg" title="Generative AI" from="Internshala"
-                description="Completed a beginner-to-intermediate Generative AI course covering LLMs, prompt engineering, and practical AI application development." />
-              <CertCard index={2} image="certi3.jpeg" title="Ethical Hacking" from="Internshala"
-                description="Completed a foundational ethical hacking course covering penetration testing, vulnerability assessment, and security best practices." />
-            </div>
-
-            <h3 class="cert-group-label">▸ Virtual Internships</h3>
-            <div class="cert-grid">
-              <CertCard index={0} image="certi4.jpeg" title="Cyber Security Analyst" from="Deloitte"
-                description="Simulated real-world consulting tasks: analyzed security logs, identified suspicious activities, assessed risks, and recommended mitigation strategies aligned with business objectives." />
-              <CertCard index={1} image="certi5.jpeg" title="Cybersecurity Job Simulation" from="Mastercard"
-                description="Served as an analyst on Mastercard's Security Awareness Team. Identified phishing threats and implemented security training procedures for vulnerable business units." />
-              <CertCard index={2} image="certi6.jpeg" title="Cybersecurity Virtual Internship" from="AIG"
-                description="Performed threat analysis for the Cyber Defense Unit. Researched CISA vulnerabilities, drafted remediation guidance, and wrote a Python brute-force decryption script for ethical hacking." />
-              <CertCard index={3} image="certi7.jpeg" title="Cybersecurity Virtual Internship" from="Tata"
-                description="Completed an IAM-focused simulation for TCS Cybersecurity Consulting. Delivered documentation on identity governance, access control, and strategic cybersecurity alignment." />
-            </div>
+            <p className="section-sub">{portfolio.certifications.subtitle}</p>
+            {portfolio.certifications.groups.map((group, groupIndex) => (
+              <React.Fragment key={groupIndex}>
+                <h3 className="cert-group-label">▸ {group.label}</h3>
+                <div className="cert-grid">
+                  {group.items.map((cert, index) => (
+                    <CertCard key={`${groupIndex}-${index}`} index={index} {...cert} />
+                  ))}
+                </div>
+              </React.Fragment>
+            ))}
           </section>
         );
       }
 
       /* ── PROJECT CARD ── */
-      function ProjectCard({ image, title, description, link, tag, index }) {
+      function ProjectCard({ image, title, description, link, website, websiteLabel, tag, index }) {
         return (
-          <div class="project-card" style={{ animationDelay: `${index * 0.1}s` }}>
-            <div class="project-img-wrap">
+          <article
+            className={`project-card ${website ? 'project-card-linked' : ''}`}
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            {website && <a className="project-card-overlay" href={website} aria-label={`Open ${title} website`}></a>}
+            <div className="project-img-wrap">
               <img src={image} alt={title} />
-              <span class="project-tag">{tag}</span>
+              <span className="project-tag">{tag}</span>
             </div>
-            <div class="project-body">
+            <div className="project-body">
               <h5>{title}</h5>
               <p>{description}</p>
-              <a href={link} target="_blank" class="project-link">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div className="project-actions">
+              {website && <a href={website} className="project-link project-website-link">
+                {websiteLabel || 'Open Website'} <span aria-hidden="true">↗</span>
+              </a>}
+              <a href={link} target="_blank" rel="noopener noreferrer" className="project-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
                 </svg>
                 View on GitHub
               </a>
+              </div>
             </div>
-          </div>
+          </article>
         );
       }
 
       /* ── PROJECTS ── */
       function Projects() {
         return (
-          <section id="section-projects" class="section">
-            <div class="section-header">
-              <span class="section-tag">05</span>
+          <section id="section-projects" className="section">
+            <div className="section-header">
+              <span className="section-tag">05</span>
               <h2>Projects</h2>
             </div>
-            <p class="section-sub">Production-grade systems I've engineered.</p>
-            <div class="project-grid">
-              <ProjectCard index={0} image="project1.jpeg" title="NewsApp" tag="API · Android Studio.java"
-                description="A live news aggregator app powered by a public API, featuring category filters and real-time article fetching."
-                link="https://github.com" />
-              <ProjectCard index={1} image="project2.jpeg" title="Attendance Management System" tag="Firebase · Android Studio.java"
-                description="Smart attendance system using facial recognition. Built with OpenCV and Android SDK — no manual input required."
-                link="https://github.com" />
-              <ProjectCard index={2} image="project3.jpeg" title="Malware & Fraud Detection" tag="ML · Deep Learning. python"
-                description="Hybrid ML/DL system that detects malware in files and identifies fraudulent messages and phishing links with high precision."
-                link="https://github.com" />
+            <p className="section-sub">{portfolio.projects.subtitle}</p>
+            <div className="project-grid">
+              {portfolio.projects.items.map((project, index) => (
+                <ProjectCard key={index} index={index} {...project} />
+              ))}
             </div>
           </section>
         );
@@ -275,34 +273,35 @@
       /* ── FEEDBACK ── */
       function Feedback() {
         return (
-          <section id="section-feedback" class="section">
-            <div class="section-header">
-              <span class="section-tag">06</span>
+          <section id="section-feedback" className="section">
+            <div className="section-header">
+              <span className="section-tag">06</span>
               <h2>Contact</h2>
             </div>
-            <p class="section-sub">Leave a message, suggestion, or collaboration request.</p>
-            <div class="feedback-card">
-              <div class="feedback-terminal-bar">
+            <p className="section-sub">{portfolio.contact.subtitle}</p>
+            <div className="feedback-card">
+              <div className="feedback-terminal-bar">
                 <span></span><span></span><span></span>
-                <span class="terminal-title">send_message.sh</span>
+                <span className="terminal-title">send_message.sh</span>
               </div>
-              <div class="feedback-body">
-                <div class="form-group">
+              <form className="feedback-body" onSubmit={submitContactMessage}>
+                <div className="form-group">
                   <label htmlFor="fb-email">Your Email</label>
-                  <input type="email" id="fb-email" placeholder="you@example.com" />
+                  <input type="email" id="fb-email" name="email" placeholder="you@example.com" autoComplete="email" required />
                 </div>
-                <div class="form-group">
+                <div className="form-group">
                   <label htmlFor="fb-msg">Message</label>
-                  <textarea id="fb-msg" rows="5" placeholder="Type your message here..."></textarea>
+                  <textarea id="fb-msg" name="message" rows="5" placeholder="Type your message here..." required></textarea>
                 </div>
-                <button class="submit-btn" type="button">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button className="submit-btn" type="submit">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                   </svg>
                   Send Message
                 </button>
-              </div>
+                <p id="contact-status" className="contact-status" role="status" aria-live="polite"></p>
+              </form>
             </div>
           </section>
         );
@@ -312,13 +311,13 @@
       function Footer() {
         return (
           <footer>
-            <div class="footer-inner">
-              <p class="footer-name">&lt;Abhinav Pathak /&gt;</p>
-              <p class="footer-copy">© 2025 · Built with React · All rights reserved</p>
-              <div class="footer-links">
-                <a href="mailto:Pabhinav9001@gmail.com">Email</a>
-                <a href="https://www.linkedin.com/in/Abhinav-Pathak-aa6a35233/" target="_blank">LinkedIn</a>
-                <a href="https://github.com" target="_blank">GitHub</a>
+            <div className="footer-inner">
+              <p className="footer-name">{portfolio.footer.name}</p>
+              <p className="footer-copy">{portfolio.footer.copy}</p>
+              <div className="footer-links">
+                <a href={portfolio.footer.email}>Email</a>
+                <a href={portfolio.footer.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                <a href={portfolio.footer.github} target="_blank" rel="noopener noreferrer">GitHub</a>
               </div>
             </div>
           </footer>
@@ -327,15 +326,17 @@
 
       /* ── APP ── */
       const App = (
-        <div class="app-root">
+        <div className="app-root">
           <Navbar />
+          <Profile />
           <main>
-            <Profile />
-            <About />
-            <Skills />
-            <Certifications />
-            <Projects />
-            <Feedback />
+            <div className="content-grid">
+              <About />
+              <Skills />
+              <Projects />
+              <Certifications />
+              <Feedback />
+            </div>
           </main>
           <Footer />
         </div>

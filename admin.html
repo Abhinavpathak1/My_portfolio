@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f7fb" />
+    <title>Admin Dashboard — Abhinav Pathak</title>
+    <link rel="stylesheet" href="admin.css" />
+    <script src="portfolio-data.js"></script>
+  </head>
+  <body>
+    <div id="auth-screen" class="auth-screen">
+      <a class="auth-brand" href="index.html"><span>AP</span> Portfolio Admin</a>
+      <section class="auth-card" aria-labelledby="auth-title">
+        <div class="auth-mark" aria-hidden="true">AP</div>
+        <p class="eyebrow">PRIVATE WORKSPACE</p>
+        <h1 id="auth-title">Welcome back</h1>
+        <p id="auth-description" class="muted">Sign in to manage your portfolio content.</p>
+        <form id="auth-form">
+          <label for="auth-id">Admin ID</label>
+          <input id="auth-id" name="username" autocomplete="username" required />
+          <label for="auth-password">Password</label>
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="10" required />
+          <label id="confirm-label" for="auth-confirm" hidden>Confirm password</label>
+          <input id="auth-confirm" name="confirm" type="password" autocomplete="new-password" minlength="10" hidden />
+          <button id="auth-submit" class="primary-button" type="submit">Sign in</button>
+          <p id="auth-message" class="form-message" role="alert"></p>
+        </form>
+        <p class="security-note">This frontend-only login, content edits, and contact inbox are stored in this browser. They do not protect the site on a public server or sync to visitors.</p>
+      </section>
+    </div>
+
+    <div id="dashboard" class="dashboard" hidden>
+      <aside class="sidebar">
+        <a class="sidebar-brand" href="index.html"><span class="brand-mark">AP</span><span>Admin Dashboard</span></a>
+        <p class="side-label">WORKSPACE</p>
+        <nav id="side-navigation" class="side-navigation" aria-label="Dashboard sections">
+          <button class="side-link active" data-view="overview" type="button"><span aria-hidden="true">▦</span> Overview</button>
+          <button class="side-link" data-view="profile" type="button"><span aria-hidden="true">◉</span> Profile</button>
+          <button class="side-link" data-view="about" type="button"><span aria-hidden="true">▤</span> About</button>
+          <button class="side-link" data-view="skills" type="button"><span aria-hidden="true">✳</span> Skills</button>
+          <button class="side-link" data-view="certifications" type="button"><span aria-hidden="true">♧</span> Certifications</button>
+          <button class="side-link" data-view="projects" type="button"><span aria-hidden="true">◫</span> Projects</button>
+          <button class="side-link" data-view="contact" type="button"><span aria-hidden="true">✉</span> Contact & footer</button>
+          <button class="side-link" data-view="messages" type="button"><span aria-hidden="true">▤</span> Messages <span id="messages-nav-count" class="nav-count" hidden></span></button>
+        </nav>
+        <a class="back-link" href="index.html"><span aria-hidden="true">↗</span> View portfolio</a>
+      </aside>
+
+      <div class="dashboard-main">
+        <header class="topbar">
+          <div class="breadcrumbs"><span>Workspace</span><span aria-hidden="true">/</span><strong id="topbar-title">Overview</strong></div>
+          <div class="admin-user"><span class="avatar">AP</span><span><strong id="admin-name">Admin</strong><small>Administrator</small></span><button id="logout-button" class="logout-button" type="button">Sign out</button></div>
+        </header>
+        <main class="content-area">
+          <section id="overview-view" class="dashboard-view">
+            <div class="page-heading">
+              <div><p class="eyebrow">YOUR CONTENT, AT A GLANCE</p><h1>Dashboard</h1><p class="muted">Manage the information displayed on your portfolio.</p></div>
+              <a class="secondary-button" href="index.html" target="_blank" rel="noopener noreferrer">Preview portfolio <span aria-hidden="true">↗</span></a>
+            </div>
+            <div id="overview-stats" class="stats-grid"></div>
+            <div class="overview-grid">
+              <section class="panel activity-panel">
+                <div class="panel-heading"><div><h2>Content sections</h2><p class="muted">Choose an area to review or update.</p></div></div>
+                <div id="section-shortcuts" class="shortcut-list"></div>
+              </section>
+              <section class="panel quick-panel">
+                <div class="panel-heading"><div><h2>Quick actions</h2><p class="muted">Jump straight into editing.</p></div></div>
+                <div class="quick-actions">
+                  <button type="button" data-open-view="projects"><span class="action-icon blue">◫</span><span><strong>Edit projects</strong><small>Update descriptions and links</small></span><b>→</b></button>
+                  <button type="button" data-open-view="certifications"><span class="action-icon violet">♧</span><span><strong>Edit certifications</strong><small>Manage courses and images</small></span><b>→</b></button>
+                  <button type="button" data-open-view="profile"><span class="action-icon green">◉</span><span><strong>Update profile</strong><small>Change personal details</small></span><b>→</b></button>
+                  <button type="button" data-open-view="contact"><span class="action-icon amber">✉</span><span><strong>Contact & footer</strong><small>Review links and footer text</small></span><b>→</b></button>
+                </div>
+              </section>
+            </div>
+            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Changes are saved to this browser only. To publish updates to everyone, edit the source data and redeploy your site.</p>
+          </section>
+          <section id="editor-view" class="dashboard-view" hidden>
+            <div class="page-heading">
+              <div><p class="eyebrow">PORTFOLIO CONTENT</p><h1 id="editor-title">Edit section</h1><p id="editor-description" class="muted"></p></div>
+              <button id="discard-button" class="secondary-button" type="button">Discard changes</button>
+            </div>
+            <form id="editor-form" class="panel editor-panel"></form>
+            <p class="storage-note"><span aria-hidden="true">ⓘ</span> Saved changes appear on the portfolio in this browser after refresh.</p>
+          </section>
+          <section id="messages-view" class="dashboard-view" hidden>
+            <div class="page-heading">
+              <div><p class="eyebrow">CONTACT INBOX</p><h1>Messages</h1><p class="muted">Messages submitted from this browser are stored here.</p></div>
+              <a class="secondary-button" href="mailto:Pabhinav9001@gmail.com">Email Abhinav <span aria-hidden="true">↗</span></a>
+            </div>
+            <div id="messages-list" class="messages-list"></div>
+            <p id="messages-empty" class="panel messages-empty" hidden>No messages yet. Messages submitted from this same browser will appear here.</p>
+            <p class="storage-note"><span aria-hidden="true">ⓘ</span> This is a local browser inbox. It does not receive messages from visitors on other devices or automatically send email. Use localhost or HTTPS so the portfolio and admin share browser storage.</p>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script src="admin.js"></script>
+  </body>
+</html>
