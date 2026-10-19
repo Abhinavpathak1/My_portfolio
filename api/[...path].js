@@ -8,6 +8,7 @@ const SESSION_SECONDS = 60 * 60 * 12;
 const MAX_CONTENT_BYTES = 1024 * 1024;
 const MAX_MESSAGE_LENGTH = 10000;
 let databaseClient;
+let schemaPromise;
 
 function getDatabase() {
   const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
@@ -99,26 +100,35 @@ function contentMatchesShape(candidate, shape) {
   return typeof candidate === typeof shape;
 }
 
-async function ensureSchema(sql) {
-  await sql`CREATE TABLE IF NOT EXISTS portfolio_content (
-    id SMALLINT PRIMARY KEY CHECK (id = 1),
-    content JSONB NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`;
-  await sql`CREATE TABLE IF NOT EXISTS contact_messages (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    is_read BOOLEAN NOT NULL DEFAULT FALSE
-  )`;
-  await sql`CREATE INDEX IF NOT EXISTS contact_messages_created_at_idx ON contact_messages (created_at DESC)`;
-  await sql`CREATE TABLE IF NOT EXISTS admin_login_attempts (
-    id BIGSERIAL PRIMARY KEY,
-    address_hash TEXT NOT NULL,
-    attempted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`;
-  await sql`CREATE INDEX IF NOT EXISTS admin_login_attempts_window_idx ON admin_login_attempts (address_hash, attempted_at DESC)`;
+function ensureSchema(sql) {
+  if (!schemaPromise) {
+    schemaPromise = sql.transaction([
+      sql`SELECT pg_advisory_xact_lock(1870030194, 1)`,
+      sql`CREATE TABLE IF NOT EXISTS portfolio_content (
+        id SMALLINT PRIMARY KEY CHECK (id = 1),
+        content JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE TABLE IF NOT EXISTS contact_messages (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        is_read BOOLEAN NOT NULL DEFAULT FALSE
+      )`,
+      sql`CREATE INDEX IF NOT EXISTS contact_messages_created_at_idx ON contact_messages (created_at DESC)`,
+      sql`CREATE TABLE IF NOT EXISTS admin_login_attempts (
+        id BIGSERIAL PRIMARY KEY,
+        address_hash TEXT NOT NULL,
+        attempted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE INDEX IF NOT EXISTS admin_login_attempts_window_idx ON admin_login_attempts (address_hash, attempted_at DESC)`
+    ]).catch(error => {
+      schemaPromise = undefined;
+      throw error;
+    });
+  }
+  return schemaPromise;
 }
 
 function loginAddressHash(req) {
