@@ -24,6 +24,7 @@ Contact submissions are validated and stored in the shared database and appear i
 
 ## Troubleshooting
 
+- If an `/api/...` endpoint returns Vercel's JSON 404 while static pages load, confirm the Vercel project's Root Directory is the repository root and redeploy the commit containing the `api/` function files.
 - If the function log says `Set POSTGRES_URL or DATABASE_URL`, open **Project Settings → Environment Variables** and confirm one of those exact variables is present for the environment serving the deployment (Production or Preview). If neither is present, connect the Postgres integration to this Vercel project or add the database URL there, then redeploy so the function receives it. Do not put the database URL in the browser or commit it to the repository.
 - If logs show a duplicate key for `pg_type_typname_nsp_index` and `portfolio_content`, deploy the version with serialized schema initialization and redeploy; the existing table is retained.
 - Other database/API errors mean the database may be unavailable; check the Vercel function logs and database integration status.

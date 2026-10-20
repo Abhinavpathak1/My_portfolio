@@ -161,12 +161,12 @@ async function handleLogin(req, res, sql) {
   return send(res, 200, { authenticated: true, email: ADMIN_EMAIL });
 }
 
-async function handleRequest(req, res) {
+async function handleRequest(req, res, routeOverride) {
   const requestUrl = new URL(req.url, `https://${req.headers.host || "localhost"}`);
   const dynamicPath = req.query?.path;
-  const route = (Array.isArray(dynamicPath) ? dynamicPath.join("/") :
+  const route = (routeOverride || (Array.isArray(dynamicPath) ? dynamicPath.join("/") :
     typeof dynamicPath === "string" ? dynamicPath :
-      requestUrl.pathname.replace(/^\/api\/?/, "")).replace(/^\/+|\/+$/g, "");
+      requestUrl.pathname.replace(/^\/api\/?/, ""))).replace(/^\/+|\/+$/g, "");
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     res.status(204).end();
@@ -269,9 +269,9 @@ async function handleRequest(req, res) {
   return send(res, 404, { error: "API route not found." });
 }
 
-module.exports = async (req, res) => {
+module.exports = async (req, res, routeOverride) => {
   try {
-    await handleRequest(req, res);
+    await handleRequest(req, res, routeOverride);
   } catch (error) {
     console.error("Portfolio API request failed:", error);
     if (!res.headersSent) send(res, 500, { error: "The request could not be completed. Check the Vercel function logs." });
