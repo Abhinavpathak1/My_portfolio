@@ -47,6 +47,7 @@
               <button onClick={() => scrollToSection('section-skills')}>Skills</button>
               <button onClick={() => scrollToSection('section-projects')}>Projects</button>
               <button onClick={() => scrollToSection('section-certs')}>Certificates</button>
+              <button onClick={() => scrollToSection('section-badges')}>Badges</button>
               <button onClick={() => scrollToSection('section-feedback')} className="nav-cta">Contact</button>
               <a className="admin-login-link" href="admin.html">Admin Login</a>
             </div>
@@ -221,6 +222,35 @@
         );
       }
 
+      function Badges() {
+        const items = portfolio.badges.items.filter(badge => badge.title || badge.image);
+        return (
+          <section id="section-badges" className="section">
+            <div className="section-header">
+              <span className="section-tag">05</span>
+              <h2>Badges</h2>
+            </div>
+            <p className="section-sub">{portfolio.badges.subtitle}</p>
+            {items.length > 0 ? (
+              <div className="badge-grid">
+                {items.map((badge, index) => (
+                  <article className="badge-card" key={index}>
+                    {badge.image && <div className="badge-image-wrap"><img src={badge.image} alt={`${badge.title} badge`} loading="lazy" /></div>}
+                    <div className="badge-body">
+                      <h3>{badge.title}</h3>
+                      {badge.from && <p className="badge-issuer">{badge.from}</p>}
+                      {badge.description && <p>{badge.description}</p>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="badge-empty">Badges will appear here when added.</p>
+            )}
+          </section>
+        );
+      }
+
       /* ── PROJECT CARD ── */
       function ProjectCard({ image, title, description, link, website, websiteLabel, tag, index }) {
         return (
@@ -257,7 +287,7 @@
         return (
           <section id="section-projects" className="section">
             <div className="section-header">
-              <span className="section-tag">05</span>
+              <span className="section-tag">06</span>
               <h2>Projects</h2>
             </div>
             <p className="section-sub">{portfolio.projects.subtitle}</p>
@@ -275,7 +305,7 @@
         return (
           <section id="section-feedback" className="section">
             <div className="section-header">
-              <span className="section-tag">06</span>
+              <span className="section-tag">07</span>
               <h2>Contact</h2>
             </div>
             <p className="section-sub">{portfolio.contact.subtitle}</p>
@@ -334,8 +364,9 @@
               <div className="content-grid">
                 <About />
                 <Skills />
-                <Projects />
                 <Certifications />
+                <Badges />
+                <Projects />
                 <Feedback />
               </div>
             </main>

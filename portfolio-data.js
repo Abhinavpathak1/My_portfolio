@@ -33,7 +33,9 @@
   root.loadPortfolioData = async function () {
     const response = await fetch("/api/content", { headers: { Accept: "application/json" } });
     const result = await readResponse(response);
-    return result.content;
+    const content = result.content;
+    if (!content.badges) content.badges = JSON.parse(JSON.stringify(defaults.badges));
+    return content;
   };
   root.savePortfolioData = async function (data) {
     const response = await fetch("/api/admin/content", {
@@ -171,6 +173,17 @@
               description: "Completed an IAM-focused simulation for TCS Cybersecurity Consulting. Delivered documentation on identity governance, access control, and strategic cybersecurity alignment."
             }
           ]
+        }
+      ]
+    },
+    badges: {
+      subtitle: "Digital badges and achievements I have earned.",
+      items: [
+        {
+          image: "",
+          title: "",
+          from: "",
+          description: ""
         }
       ]
     },

@@ -293,6 +293,23 @@ button:disabled { cursor: wait; opacity: .7; }
 .editor-field input, .editor-field textarea { font-size: .82rem; }
 .editor-field textarea { min-height: 94px; resize: vertical; line-height: 1.55; }
 .editor-field small { color: #8b98aa; font-size: .68rem; }
+.image-upload-control { display: grid; justify-items: start; gap: 6px; }
+.image-upload-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  border: 1px solid #d9e6f7;
+  border-radius: 7px;
+  padding: 0 11px;
+  background: #f8fbff;
+  color: #3274d9;
+  font-size: .7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.image-upload-button:hover { background: #edf4ff; }
+.image-upload-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+.image-upload-button:focus-within { outline: 3px solid rgba(53, 121, 232, .3); outline-offset: 2px; }
 .collection-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 25px 0 12px; border-top: 1px solid var(--line); padding-top: 19px; }
 .collection-heading h2 { margin: 0; font-family: Manrope, sans-serif; font-size: .93rem; }
 .collection-heading button, .remove-item {

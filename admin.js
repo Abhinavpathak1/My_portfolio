@@ -4,6 +4,7 @@
     about: "About",
     skills: "Skills",
     certifications: "Certifications",
+    badges: "Badges",
     projects: "Projects",
     contact: "Contact & footer"
   };
@@ -12,6 +13,7 @@
     about: "Edit the introduction and supporting copy in the About section.",
     skills: "Manage the technologies and tools listed in the Skills section.",
     certifications: "Edit course and internship entries, including their image paths.",
+    badges: "Add, edit, and upload images for your digital badges.",
     projects: "Update project titles, descriptions, technology tags, images, and links.",
     contact: "Edit the Contact section introduction and the portfolio footer links and text."
   };
@@ -101,12 +103,17 @@
       return renderObject(value, path);
     }
     if (typeof value === "string" && isLongText(label, value)) {
-      return `<label class="editor-field${wide}"><span class="field-label">${safeLabel}</span><textarea name="${safePath}">${safeValue}</textarea></label>`;
+      return `<div class="editor-field${wide}"><label class="field-label" for="${safePath}-input">${safeLabel}</label><textarea id="${safePath}-input" name="${safePath}">${safeValue}</textarea></div>`;
     }
-    const hint = /image/i.test(label)
-      ? '<small>Use an existing image filename or a path relative to index.html.</small>'
-      : "";
-    return `<label class="editor-field${wide}"><span class="field-label">${safeLabel}</span><input type="text" name="${safePath}" value="${safeValue}" />${hint}</label>`;
+    const inputId = `${safePath}-input`;
+    const canUploadImage = /image/i.test(label) &&
+      (/^certifications\.groups/.test(path) || /^badges\.items/.test(path));
+    const hint = canUploadImage
+      ? `<div class="image-upload-control"><label class="image-upload-button">Upload image<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${safePath}" /></label><small data-upload-status-for="${safePath}">JPG, PNG, or WebP. The image is resized before upload.</small></div>`
+      : /image/i.test(label)
+        ? '<small>Use an existing image filename or a path relative to index.html.</small>'
+        : "";
+    return `<div class="editor-field${wide}"><label class="field-label" for="${escapeHtml(inputId)}">${safeLabel}</label><input id="${escapeHtml(inputId)}" type="text" name="${safePath}" value="${safeValue}" />${hint}</div>`;
   }
 
   function renderObject(value, path) {
@@ -176,7 +183,10 @@
       : view === "profile"
         ? `${renderPrimitive(content.brand, "brand", "Portfolio brand")}${renderObject(content.profile, "profile")}`
         : renderObject(content[view], view);
-    editorForm.innerHTML = `<p class="editor-intro">Changes are saved to the shared portfolio database. Image paths should point to files available beside your portfolio page.</p>${blocks}<div class="save-row"><span id="save-message" class="save-message" role="status"></span><button class="primary-button save-button" type="submit">Save changes</button></div>`;
+    const intro = view === "certifications" || view === "badges"
+      ? "Upload a JPG, PNG, or WebP image for a certificate or badge. Uploaded images are stored in Postgres; save changes to publish them."
+      : "Changes are saved to the shared portfolio database. Image paths should point to files available beside your portfolio page.";
+    editorForm.innerHTML = `<p class="editor-intro">${intro}</p>${blocks}<div class="save-row"><span id="save-message" class="save-message" role="status"></span><button class="primary-button save-button" type="submit">Save changes</button></div>`;
   }
 
   function renderOverview() {
@@ -204,11 +214,13 @@
         about: `${content.about.paragraphs.length} introduction paragraphs`,
         skills: `${content.skills.items.length} skill entries`,
         certifications: `${certificateCount} course and internship entries`,
+        badges: `${content.badges.items.filter(badge => badge.title || badge.image).length} digital badges`,
         projects: `${content.projects.items.length} project cards`,
         contact: "Contact intro and footer links",
         messages: `${messages.length} saved messages`
       }[view];
-      return `<div class="shortcut-row"><span class="shortcut-icon" aria-hidden="true">${["◉", "▤", "✳", "♧", "◫", "✉", "▤"][index]}</span><span class="shortcut-copy"><strong>${title}</strong><small>${hint}</small></span><button type="button" data-open-view="${view}" aria-label="${view === "messages" ? "View messages" : `Edit ${title}`}">${view === "messages" ? "View →" : "Edit →"}</button></div>`;
+      const icons = { profile: "◉", about: "▤", skills: "✳", certifications: "♧", badges: "✦", projects: "◫", contact: "✉", messages: "▤" };
+      return `<div class="shortcut-row"><span class="shortcut-icon" aria-hidden="true">${icons[view]}</span><span class="shortcut-copy"><strong>${title}</strong><small>${hint}</small></span><button type="button" data-open-view="${view}" aria-label="${view === "messages" ? "View messages" : `Edit ${title}`}">${view === "messages" ? "View →" : "Edit →"}</button></div>`;
     }).join("");
   }
 
@@ -296,6 +308,45 @@
       authMessage.textContent = errorMessage(error, "Unable to sign in.");
     } finally {
       authSubmit.disabled = false;
+    }
+  });
+
+  editorForm.addEventListener("change", async event => {
+    const fileInput = event.target.closest("input[type='file'][data-upload-for]");
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+    const file = fileInput.files[0];
+    const path = fileInput.dataset.uploadFor;
+    const status = Array.from(editorForm.querySelectorAll("[data-upload-status-for]"))
+      .find(element => element.dataset.uploadStatusFor === path);
+    const saveButton = editorForm.querySelector(".save-button");
+    captureEditorValues();
+    fileInput.disabled = true;
+    if (saveButton) saveButton.disabled = true;
+    if (status) status.textContent = "Preparing image…";
+    try {
+      const image = await prepareImage(file);
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1]);
+        reader.onerror = () => reject(new Error("The selected image could not be read."));
+        reader.readAsDataURL(image);
+      });
+      const result = await apiRequest("/api/media/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: base64 })
+      });
+      const imageField = Array.from(editorForm.elements).find(element => element.name === path);
+      if (!imageField) throw new Error("The image field is no longer available.");
+      imageField.value = result.url;
+      setAtPath(content, path, result.url);
+      if (status) status.textContent = `Uploaded ${file.name}. Save changes to publish.`;
+    } catch (error) {
+      if (status) status.textContent = `Upload failed: ${errorMessage(error, "The image could not be uploaded.")}`;
+    } finally {
+      fileInput.value = "";
+      fileInput.disabled = false;
+      if (saveButton) saveButton.disabled = false;
     }
   });
 
@@ -397,4 +448,38 @@
   });
 
   bindAuthentication();
+
+  async function prepareImage(file) {
+    const maximumInputBytes = 20 * 1024 * 1024;
+    const maximumOutputBytes = 800 * 1024;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      throw new Error("Choose a JPG, PNG, or WebP image.");
+    }
+    if (file.size > maximumInputBytes) {
+      throw new Error("Choose an image smaller than 20 MB.");
+    }
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+      if (bitmap.width * bitmap.height > 40000000) {
+        throw new Error("The image dimensions are too large to process.");
+      }
+      let scale = Math.min(1, 2200 / bitmap.width, 2200 / bitmap.height);
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Image processing is unavailable in this browser.");
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const image = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", 0.82));
+        if (!image) throw new Error("The selected image could not be converted.");
+        if (image.size <= maximumOutputBytes) return image;
+        scale *= 0.78;
+      }
+      throw new Error("The image is too large after compression. Choose a smaller image.");
+    } finally {
+      if (bitmap) bitmap.close();
+    }
+  }
 })();
