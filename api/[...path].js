@@ -171,7 +171,11 @@ async function handleLogin(req, res, sql) {
 }
 
 async function handleRequest(req, res) {
-  const route = new URL(req.url, `https://${req.headers.host || "localhost"}`).pathname.replace(/^\/api\/?/, "");
+  const requestUrl = new URL(req.url, `https://${req.headers.host || "localhost"}`);
+  const dynamicPath = req.query?.path;
+  const route = (Array.isArray(dynamicPath) ? dynamicPath.join("/") :
+    typeof dynamicPath === "string" ? dynamicPath :
+      requestUrl.pathname.replace(/^\/api\/?/, "")).replace(/^\/+|\/+$/g, "");
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     res.status(204).end();
