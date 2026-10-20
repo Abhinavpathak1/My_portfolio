@@ -232,7 +232,8 @@
             </div>
             <p className="section-sub">{portfolio.badges.subtitle}</p>
             {items.length > 0 ? (
-              <div className="badge-grid">
+              <div className="badge-viewer" aria-label="Digital badges">
+                <div className="badge-grid">
                 {items.map((badge, index) => (
                   <article className="badge-card" key={index}>
                     {badge.image && <div className="badge-image-wrap"><img src={badge.image} alt={`${badge.title} badge`} loading="lazy" /></div>}
@@ -243,6 +244,7 @@
                     </div>
                   </article>
                 ))}
+                </div>
               </div>
             ) : (
               <p className="badge-empty">Badges will appear here when added.</p>
@@ -255,10 +257,10 @@
       function ProjectCard({ image, title, description, link, website, websiteLabel, tag, index }) {
         return (
           <article
-            className={`project-card ${website ? 'project-card-linked' : ''}`}
+            className="project-card project-card-linked"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
-            {website && <a className="project-card-overlay" href={website} aria-label={`Open ${title} website`}></a>}
+            <a className="project-card-overlay" href={`project.html?project=${index}`} aria-label={`View ${title} project details`}></a>
             <div className="project-img-wrap">
               <img src={image} alt={title} />
               <span className="project-tag">{tag}</span>
@@ -267,6 +269,9 @@
               <h5>{title}</h5>
               <p>{description}</p>
               <div className="project-actions">
+              <a href={`project.html?project=${index}`} className="project-link project-details-link">
+                Project details <span aria-hidden="true">→</span>
+              </a>
               {website && <a href={website} className="project-link project-website-link">
                 {websiteLabel || 'Open Website'} <span aria-hidden="true">↗</span>
               </a>}

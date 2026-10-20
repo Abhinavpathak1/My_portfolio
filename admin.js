@@ -14,7 +14,7 @@
     skills: "Manage the technologies and tools listed in the Skills section.",
     certifications: "Edit course and internship entries, including their image paths.",
     badges: "Add, edit, and upload images for your digital badges.",
-    projects: "Update project titles, descriptions, technology tags, images, and links.",
+    projects: "Manage project cards, screenshots, demo videos, descriptions, and links.",
     contact: "Edit the Contact section introduction and the portfolio footer links and text."
   };
 
@@ -107,9 +107,15 @@
     }
     const inputId = `${safePath}-input`;
     const canUploadImage = /image/i.test(label) &&
-      (/^certifications\.groups/.test(path) || /^badges\.items/.test(path));
+      (/^certifications\.groups/.test(path) || /^badges\.items/.test(path) || /^projects\.items/.test(path));
+    const canUploadProjectScreenshot = /^projects\.items\[\d+\]\.screenshots\[\d+\]$/.test(path);
+    const canUploadProjectVideo = /^projects\.items\[\d+\]\.video$/.test(path);
     const hint = canUploadImage
-      ? `<div class="image-upload-control"><label class="image-upload-button">Upload image<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${safePath}" /></label><small data-upload-status-for="${safePath}">JPG, PNG, or WebP. The image is resized before upload.</small></div>`
+      ? `<div class="image-upload-control"><label class="image-upload-button">Upload image<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${safePath}" data-media-kind="image" /></label><small data-upload-status-for="${safePath}">JPG, PNG, or WebP. The image is resized before upload.</small></div>`
+      : canUploadProjectScreenshot
+        ? `<div class="image-upload-control"><label class="image-upload-button">Upload screenshot<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${safePath}" data-media-kind="image" /></label><small data-upload-status-for="${safePath}">Images are resized before upload.</small></div>`
+        : canUploadProjectVideo
+          ? `<div class="image-upload-control"><label class="image-upload-button">Upload demo video<input type="file" accept="video/mp4,video/webm" data-upload-for="${safePath}" data-media-kind="video" /></label><small data-upload-status-for="${safePath}">MP4 or WebM, up to 3 MB. One video per project.</small></div>`
       : /image/i.test(label)
         ? '<small>Use an existing image filename or a path relative to index.html.</small>'
         : "";
@@ -127,11 +133,13 @@
     const safeLabel = escapeHtml(label);
     const entries = value.map((item, index) => {
       const itemPath = `${path}[${index}]`;
-      const itemLabel = `${label.replace(/s$/, "")} ${index + 1}`;
+      const itemLabel = /^projects\.items\[\d+\]\.screenshots$/.test(path)
+        ? `Screenshot ${index + 1}`
+        : `${label.replace(/s$/, "")} ${index + 1}`;
       const removeButton = `<button class="remove-item" type="button" data-remove="${escapeHtml(itemPath)}">Remove</button>`;
       const contentHtml = item && typeof item === "object"
         ? renderObject(item, itemPath)
-        : renderPrimitive(item, itemPath, `${label.replace(/s$/, "")} ${index + 1}`);
+        : renderPrimitive(item, itemPath, itemLabel);
       return `<article class="editor-item"><div class="editor-item-header"><span>${escapeHtml(itemLabel)}</span>${removeButton}</div>${contentHtml}</article>`;
     }).join("");
     return `<section class="editor-collection"><div class="collection-heading"><h2>${safeLabel}</h2><button type="button" data-add="${safePath}">+ Add ${escapeHtml(label.replace(/s$/, ""))}</button></div><div class="collection-list">${entries || '<p class="editor-intro">No entries yet. Add one to get started.</p>'}</div></section>`;
@@ -185,6 +193,8 @@
         : renderObject(content[view], view);
     const intro = view === "certifications" || view === "badges"
       ? "Upload a JPG, PNG, or WebP image for a certificate or badge. Uploaded images are stored in Postgres; save changes to publish them."
+      : view === "projects"
+        ? "Add as many project screenshots as needed and upload one MP4 or WebM demo video per project. Save changes to publish uploaded media."
       : "Changes are saved to the shared portfolio database. Image paths should point to files available beside your portfolio page.";
     editorForm.innerHTML = `<p class="editor-intro">${intro}</p>${blocks}<div class="save-row"><span id="save-message" class="save-message" role="status"></span><button class="primary-button save-button" type="submit">Save changes</button></div>`;
   }
@@ -316,25 +326,32 @@
     if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
     const file = fileInput.files[0];
     const path = fileInput.dataset.uploadFor;
+    const kind = fileInput.dataset.mediaKind || "image";
     const status = Array.from(editorForm.querySelectorAll("[data-upload-status-for]"))
       .find(element => element.dataset.uploadStatusFor === path);
     const saveButton = editorForm.querySelector(".save-button");
     captureEditorValues();
     fileInput.disabled = true;
     if (saveButton) saveButton.disabled = true;
-    if (status) status.textContent = "Preparing image…";
+    if (status) status.textContent = kind === "image" ? "Preparing image…" : "Preparing video…";
     try {
-      const image = await prepareImage(file);
+      const media = kind === "image" ? await prepareImage(file) : file;
+      if (kind === "video" && !["video/mp4", "video/webm"].includes(file.type)) {
+        throw new Error("Choose an MP4 or WebM video.");
+      }
+      if (kind === "video" && file.size > 3 * 1024 * 1024) {
+        throw new Error("Choose a video no larger than 3 MB.");
+      }
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result).split(",")[1]);
-        reader.onerror = () => reject(new Error("The selected image could not be read."));
-        reader.readAsDataURL(image);
+        reader.onerror = () => reject(new Error("The selected media could not be read."));
+        reader.readAsDataURL(media);
       });
       const result = await apiRequest("/api/media/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: base64 })
+        body: JSON.stringify({ data: base64, kind })
       });
       const imageField = Array.from(editorForm.elements).find(element => element.name === path);
       if (!imageField) throw new Error("The image field is no longer available.");

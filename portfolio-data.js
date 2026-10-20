@@ -35,6 +35,12 @@
     const result = await readResponse(response);
     const content = result.content;
     if (!content.badges) content.badges = JSON.parse(JSON.stringify(defaults.badges));
+    if (content.projects && Array.isArray(content.projects.items)) {
+      content.projects.items.forEach(project => {
+        if (!Array.isArray(project.screenshots)) project.screenshots = [];
+        if (typeof project.video !== "string") project.video = "";
+      });
+    }
     return content;
   };
   root.savePortfolioData = async function (data) {
@@ -195,7 +201,9 @@
           title: "NewsApp",
           tag: "API · Android Studio.java",
           description: "A live news aggregator app powered by a public API, featuring category filters and real-time article fetching.",
-          link: "https://github.com"
+          link: "https://github.com",
+          screenshots: [],
+          video: ""
         },
         {
           image: "project2.jpeg",
@@ -204,14 +212,18 @@
           description: "Smart attendance system using facial recognition. Built with OpenCV and Android SDK — no manual input required.",
           link: "https://github.com",
           website: "maket.in/index.html",
-          websiteLabel: "Open MARKIT"
+          websiteLabel: "Open MARKIT",
+          screenshots: [],
+          video: ""
         },
         {
           image: "project3.jpeg",
           title: "Malware & Fraud Detection",
           tag: "ML · Deep Learning. python",
           description: "Hybrid ML/DL system that detects malware in files and identifies fraudulent messages and phishing links with high precision.",
-          link: "https://github.com"
+          link: "https://github.com",
+          screenshots: [],
+          video: ""
         }
       ]
     },

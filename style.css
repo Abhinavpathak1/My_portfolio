@@ -1750,3 +1750,90 @@ footer { padding: 17px 22px; border-top: 1px solid #e8eef5; background: #fbfcfe;
   text-align: center;
   font-size: .9rem;
 }
+
+.badge-viewer {
+  max-height: 550px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 5px 8px 2px;
+  scrollbar-color: #b8cce6 #edf2f8;
+  scrollbar-width: thin;
+}
+.badge-viewer::-webkit-scrollbar { width: 8px; }
+.badge-viewer::-webkit-scrollbar-track { border-radius: 8px; background: #edf2f8; }
+.badge-viewer::-webkit-scrollbar-thumb { border: 2px solid #edf2f8; border-radius: 8px; background: #b8cce6; }
+.badge-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.badge-card { align-items: flex-start; }
+.badge-body { overflow-wrap: anywhere; }
+
+.project-detail-page { min-height: 100vh; background: #f5f8fc; }
+.project-detail-topbar {
+  display: flex;
+  min-height: 70px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e4ebf4;
+  background: rgba(255,255,255,.94);
+  padding: 10px max(22px, calc((100vw - 1160px) / 2));
+}
+.project-detail-brand, .project-back-link { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.project-detail-brand { color: #263e5b; font-weight: 800; }
+.project-detail-brand .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
+.project-back-link { color: #527092; font-size: .82rem; font-weight: 700; }
+.project-back-link:hover { color: #2870c6; }
+.project-detail-main { width: min(100% - 40px, 1120px); margin: 0 auto; padding: 38px 0 70px; }
+.project-detail-main .portfolio-data-status { margin-bottom: 20px; border: 1px solid #f0c36d; border-radius: 10px; }
+.project-detail-hero {
+  display: grid;
+  min-height: 300px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 64px);
+  border: 1px solid #e3eaf3;
+  border-radius: 22px;
+  padding: clamp(24px, 5vw, 58px);
+  background: radial-gradient(ellipse at 88% 10%, #e8f2ff 0, transparent 43%), #fff;
+  box-shadow: 0 14px 45px rgba(38, 72, 118, .07);
+}
+.project-detail-copy { min-width: 0; }
+.project-detail-eyebrow { margin: 0 0 9px; color: #4080cf; font-size: .68rem; font-weight: 800; letter-spacing: .13em; }
+.project-detail-tag { display: inline-flex; max-width: 100%; margin: 0 0 12px; border: 1px solid #dce9f9; border-radius: 20px; padding: 5px 10px; background: #f2f7ff; color: #4777ac; font-size: .7rem; overflow-wrap: anywhere; }
+.project-detail-copy h1, .project-not-found h1 { margin: 0; color: #243c5b; font-family: var(--sans); font-size: clamp(1.8rem, 4vw, 3.15rem); line-height: 1.12; letter-spacing: -.045em; }
+.project-detail-description { max-width: 62ch; margin: 17px 0 0; color: #687d96; font-size: clamp(.9rem, 1.7vw, 1.02rem); line-height: 1.75; white-space: pre-wrap; }
+.project-detail-cover { display: block; width: 100%; max-height: 330px; aspect-ratio: 4 / 3; border: 1px solid #e3eaf3; border-radius: 15px; background: #edf3fa; object-fit: cover; box-shadow: 0 13px 30px rgba(35, 64, 101, .12); }
+.project-detail-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
+.project-detail-button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #d9e5f3; border-radius: 8px; padding: 0 14px; background: #fff; color: #3c6594; font-size: .77rem; font-weight: 700; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
+.project-detail-button:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(44, 94, 157, .12); }
+.project-detail-primary { border-color: #347de0; background: #347de0; color: #fff; }
+.project-detail-section { margin-top: 42px; }
+.project-detail-section-heading { margin-bottom: 17px; }
+.project-detail-section-heading .project-detail-eyebrow { margin-bottom: 4px; }
+.project-detail-section-heading h2 { margin: 0; color: #2c4565; font-family: var(--sans); font-size: clamp(1.2rem, 2.5vw, 1.6rem); }
+.project-detail-section-heading > p:last-child { margin: 7px 0 0; color: #8191a5; font-size: .83rem; }
+.project-video-frame { overflow: hidden; border: 1px solid #dfe7f0; border-radius: 15px; background: #101a28; box-shadow: 0 10px 30px rgba(27, 48, 77, .09); }
+.project-video-frame video { display: block; width: 100%; max-height: 680px; aspect-ratio: 16 / 9; background: #101a28; }
+.project-screenshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 17px; }
+.project-screenshot-grid figure { min-width: 0; overflow: hidden; margin: 0; border: 1px solid #e2eaf3; border-radius: 13px; background: #fff; box-shadow: 0 5px 17px rgba(34, 67, 109, .05); }
+.project-screenshot-grid img { display: block; width: 100%; max-height: 420px; aspect-ratio: 16 / 10; background: #edf3fa; object-fit: contain; }
+.project-screenshot-grid figcaption { padding: 10px 13px; color: #73849a; font-size: .72rem; }
+.project-gallery-empty { border: 1px dashed #cfdbea; border-radius: 12px; padding: 25px; color: #788ba3; background: rgba(255,255,255,.65); text-align: center; font-size: .83rem; }
+.project-not-found { display: grid; min-height: 300px; align-content: center; justify-items: start; gap: 14px; border: 1px solid #e3eaf3; border-radius: 18px; padding: clamp(24px, 6vw, 55px); background: #fff; }
+.project-not-found .project-detail-eyebrow { margin: 0; }
+
+@media (max-width: 700px) {
+  .project-detail-topbar { min-height: 60px; padding-inline: 17px; }
+  .project-detail-main { width: min(100% - 30px, 1120px); padding-top: 23px; }
+  .project-detail-hero { grid-template-columns: minmax(0, 1fr); gap: 23px; border-radius: 16px; }
+  .project-detail-cover { max-height: 280px; }
+  .project-detail-section { margin-top: 31px; }
+}
+@media (max-width: 420px) {
+  .project-detail-brand { gap: 7px; font-size: .8rem; }
+  .project-detail-brand .brand-mark { width: 32px; height: 32px; }
+  .project-back-link { font-size: .72rem; }
+  .project-detail-main { width: min(100% - 22px, 1120px); }
+  .project-detail-hero { padding: 20px; }
+  .badge-viewer { max-height: 480px; }
+  .badge-grid { grid-template-columns: minmax(0, 1fr); }
+}

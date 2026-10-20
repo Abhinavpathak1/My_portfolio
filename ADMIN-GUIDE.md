@@ -18,7 +18,7 @@ Install dependencies with `npm install`, connect a development Postgres database
 
 ## Content and contact messages
 
-The built-in content in `portfolio-data.js` is shown until the first admin save. Thereafter, visitors and the admin dashboard use the shared Postgres content. The admin can upload certificate and badge images; images are resized to WebP in the browser and stored in Postgres (up to 800 KB each). After uploading, save the section to publish the new image. Other image fields continue to accept paths to files already deployed with the site.
+The built-in content in `portfolio-data.js` is shown until the first admin save. Thereafter, visitors and the admin dashboard use the shared Postgres content. The admin can upload certificate, badge, and project images; images are resized to WebP in the browser and stored in Postgres (up to 800 KB each). Project entries support multiple screenshots and one uploaded MP4 or WebM demo video (up to 3 MB). Save the section to publish uploaded media. Other image fields continue to accept paths to files already deployed with the site. Each project card opens a detail page with its description, screenshot gallery, video, and project links.
 
 Contact submissions are validated and stored in the shared database and appear in the authenticated dashboard inbox. Reply opens the admin's email app. On submission the visitor's browser also prepares a `mailto:` draft addressed to the contact email; no email is sent automatically. Messages are limited to 10,000 characters.
 
