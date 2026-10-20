@@ -310,6 +310,22 @@ button:disabled { cursor: wait; opacity: .7; }
 .image-upload-button:hover { background: #edf4ff; }
 .image-upload-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .image-upload-button:focus-within { outline: 3px solid rgba(53, 121, 232, .3); outline-offset: 2px; }
+.project-media-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 17px;
+  border: 1px solid #e3ebf6;
+  border-radius: 9px;
+  padding: 12px 14px;
+  background: #f8fbff;
+}
+.project-media-heading { display: grid; gap: 2px; }
+.project-media-heading strong { color: #3e526d; font-size: .74rem; }
+.project-media-heading small, .project-media-statuses small { color: #8291a5; font-size: .65rem; }
+.project-media-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.project-media-statuses { display: grid; grid-column: 1 / -1; gap: 3px; }
 .collection-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 25px 0 12px; border-top: 1px solid var(--line); padding-top: 19px; }
 .collection-heading h2 { margin: 0; font-family: Manrope, sans-serif; font-size: .93rem; }
 .collection-heading button, .remove-item {
@@ -385,6 +401,8 @@ button:disabled { cursor: wait; opacity: .7; }
   .editor-panel { padding: 16px; }
   .editor-fields { grid-template-columns: 1fr; gap: 14px; }
   .editor-field.wide { grid-column: auto; }
+  .project-media-tools { grid-template-columns: 1fr; }
+  .project-media-statuses { grid-column: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }

@@ -107,19 +107,32 @@
     }
     const inputId = `${safePath}-input`;
     const canUploadImage = /image/i.test(label) &&
-      (/^certifications\.groups/.test(path) || /^badges\.items/.test(path) || /^projects\.items/.test(path));
+      (/^certifications\.groups/.test(path) || /^badges\.items/.test(path));
     const canUploadProjectScreenshot = /^projects\.items\[\d+\]\.screenshots\[\d+\]$/.test(path);
-    const canUploadProjectVideo = /^projects\.items\[\d+\]\.video$/.test(path);
     const hint = canUploadImage
       ? `<div class="image-upload-control"><label class="image-upload-button">Upload image<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${safePath}" data-media-kind="image" /></label><small data-upload-status-for="${safePath}">JPG, PNG, or WebP. The image is resized before upload.</small></div>`
       : canUploadProjectScreenshot
         ? `<div class="image-upload-control"><label class="image-upload-button">Upload screenshot<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${safePath}" data-media-kind="image" /></label><small data-upload-status-for="${safePath}">Images are resized before upload.</small></div>`
-        : canUploadProjectVideo
-          ? `<div class="image-upload-control"><label class="image-upload-button">Upload demo video<input type="file" accept="video/mp4,video/webm" data-upload-for="${safePath}" data-media-kind="video" /></label><small data-upload-status-for="${safePath}">MP4 or WebM, up to 3 MB. One video per project.</small></div>`
       : /image/i.test(label)
         ? '<small>Use an existing image filename or a path relative to index.html.</small>'
         : "";
     return `<div class="editor-field${wide}"><label class="field-label" for="${escapeHtml(inputId)}">${safeLabel}</label><input id="${escapeHtml(inputId)}" type="text" name="${safePath}" value="${safeValue}" />${hint}</div>`;
+  }
+
+  function renderProjectMediaControls(projectPath) {
+    const imagePath = `${projectPath}.image`;
+    const videoPath = `${projectPath}.video`;
+    return `<div class="project-media-tools">
+      <div class="project-media-heading"><strong>Project media</strong><small>Upload the card image and an optional walkthrough video.</small></div>
+      <div class="project-media-actions">
+        <label class="image-upload-button">Upload project image<input type="file" accept="image/jpeg,image/png,image/webp" data-upload-for="${escapeHtml(imagePath)}" data-media-kind="image" /></label>
+        <label class="image-upload-button">Upload project video<input type="file" accept="video/mp4,video/webm" data-upload-for="${escapeHtml(videoPath)}" data-media-kind="video" /></label>
+      </div>
+      <div class="project-media-statuses">
+        <small data-upload-status-for="${escapeHtml(imagePath)}">JPG, PNG, or WebP. Image is resized before upload.</small>
+        <small data-upload-status-for="${escapeHtml(videoPath)}">MP4 or WebM, up to 3 MB.</small>
+      </div>
+    </div>`;
   }
 
   function renderObject(value, path) {
@@ -138,7 +151,7 @@
         : `${label.replace(/s$/, "")} ${index + 1}`;
       const removeButton = `<button class="remove-item" type="button" data-remove="${escapeHtml(itemPath)}">Remove</button>`;
       const contentHtml = item && typeof item === "object"
-        ? renderObject(item, itemPath)
+        ? `${path === "projects.items" ? renderProjectMediaControls(itemPath) : ""}${renderObject(item, itemPath)}`
         : renderPrimitive(item, itemPath, itemLabel);
       return `<article class="editor-item"><div class="editor-item-header"><span>${escapeHtml(itemLabel)}</span>${removeButton}</div>${contentHtml}</article>`;
     }).join("");
