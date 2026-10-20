@@ -1,4 +1,4 @@
-const { createHmac, randomUUID, timingSafeEqual } = require("node:crypto");
+const { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } = require("node:crypto");
 const { neon } = require("@neondatabase/serverless");
 const defaults = require("../portfolio-data.js");
 
@@ -39,36 +39,15 @@ function getCookie(req, name) {
   }
 }
 
-function secret() {
-  const value = process.env.SESSION_SECRET;
-  if (!value || value.length < 32) throw new Error("SESSION_SECRET must contain at least 32 characters.");
-  return value;
-}
-
-function sign(payload) {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = createHmac("sha256", secret()).update(encoded).digest("base64url");
-  return `${encoded}.${signature}`;
-}
-
-function verifySession(req) {
+async function verifySession(req, sql) {
   const token = getCookie(req, SESSION_COOKIE);
-  const [encoded, providedSignature, extra] = token.split(".");
-  if (!encoded || !providedSignature || extra) return null;
-  const expectedSignature = createHmac("sha256", secret()).update(encoded).digest();
-  let actualSignature;
-  try {
-    actualSignature = Buffer.from(providedSignature, "base64url");
-  } catch {
-    return null;
-  }
-  if (actualSignature.length !== expectedSignature.length || !timingSafeEqual(actualSignature, expectedSignature)) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
-    return payload.email === ADMIN_EMAIL && Number.isInteger(payload.exp) && payload.exp > Date.now() ? payload : null;
-  } catch {
-    return null;
-  }
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password || password.length < 16) return null;
+  const tokenHash = createHmac("sha256", password).update(token).digest("hex");
+  const sessions = await sql`SELECT email FROM admin_sessions
+    WHERE token_hash = ${tokenHash} AND expires_at > NOW()`;
+  return sessions[0]?.email === ADMIN_EMAIL ? { email: ADMIN_EMAIL } : null;
 }
 
 function sameOrigin(req) {
@@ -122,7 +101,14 @@ function ensureSchema(sql) {
         address_hash TEXT NOT NULL,
         attempted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`,
-      sql`CREATE INDEX IF NOT EXISTS admin_login_attempts_window_idx ON admin_login_attempts (address_hash, attempted_at DESC)`
+      sql`CREATE INDEX IF NOT EXISTS admin_login_attempts_window_idx ON admin_login_attempts (address_hash, attempted_at DESC)`,
+      sql`CREATE TABLE IF NOT EXISTS admin_sessions (
+        token_hash TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE INDEX IF NOT EXISTS admin_sessions_expires_at_idx ON admin_sessions (expires_at)`
     ]).catch(error => {
       schemaPromise = undefined;
       throw error;
@@ -135,7 +121,7 @@ function loginAddressHash(req) {
   const forwarded = req.headers["x-forwarded-for"];
   const address = (typeof forwarded === "string" ? forwarded.split(",")[0] : "") ||
     req.headers["x-real-ip"] || "unknown";
-  return createHmac("sha256", secret()).update(String(address)).digest("hex");
+  return createHash("sha256").update(String(address)).digest("hex");
 }
 
 async function handleLogin(req, res, sql) {
@@ -157,8 +143,8 @@ async function handleLogin(req, res, sql) {
     WHERE address_hash = ${addressHash} AND attempted_at > NOW() - INTERVAL '15 minutes'`;
   if (recent[0].attempts >= 5) return send(res, 429, { error: "Too many sign-in attempts. Try again in 15 minutes." });
 
-  const submittedHash = createHmac("sha256", secret()).update(submittedPassword).digest();
-  const expectedHash = createHmac("sha256", secret()).update(password).digest();
+  const submittedHash = createHmac("sha256", password).update(submittedPassword).digest();
+  const expectedHash = createHmac("sha256", password).update(password).digest();
   const valid = timingSafeEqual(submittedHash, expectedHash);
   if (!valid) {
     await sql`INSERT INTO admin_login_attempts (address_hash) VALUES (${addressHash})`;
@@ -166,7 +152,12 @@ async function handleLogin(req, res, sql) {
   }
 
   await sql`DELETE FROM admin_login_attempts WHERE address_hash = ${addressHash}`;
-  setCookie(res, sign({ email: ADMIN_EMAIL, exp: Date.now() + SESSION_SECONDS * 1000 }), SESSION_SECONDS);
+  await sql`DELETE FROM admin_sessions WHERE expires_at <= NOW()`;
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = createHmac("sha256", password).update(token).digest("hex");
+  await sql`INSERT INTO admin_sessions (token_hash, email, expires_at)
+    VALUES (${tokenHash}, ${ADMIN_EMAIL}, NOW() + INTERVAL '12 hours')`;
+  setCookie(res, token, SESSION_SECONDS);
   return send(res, 200, { authenticated: true, email: ADMIN_EMAIL });
 }
 
@@ -182,20 +173,24 @@ async function handleRequest(req, res) {
     return;
   }
 
-  if ((route.startsWith("auth/") || route.startsWith("admin/")) &&
-      (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
-    return send(res, 503, { error: "Admin sign-in is not configured. Set a private SESSION_SECRET of at least 32 characters in Vercel." });
+  if (route === "auth/session" && req.method === "GET" && !getCookie(req, SESSION_COOKIE)) {
+    return send(res, 200, { authenticated: false });
   }
 
-  if (route === "auth/session" && req.method === "GET") {
-    const session = verifySession(req);
-    return send(res, 200, session
-      ? { authenticated: true, email: session.email }
-      : { authenticated: false });
+  if (route === "auth/login" && req.method === "POST" &&
+      (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.length < 16)) {
+    return send(res, 503, { error: "Admin sign-in requires a private ADMIN_PASSWORD of at least 16 characters in Vercel." });
   }
 
   const sql = getDatabase();
   await ensureSchema(sql);
+
+  if (route === "auth/session" && req.method === "GET") {
+    const session = await verifySession(req, sql);
+    return send(res, 200, session
+      ? { authenticated: true, email: session.email }
+      : { authenticated: false });
+  }
 
   if (route === "content" && req.method === "GET") {
     const result = await sql`SELECT content FROM portfolio_content WHERE id = 1`;
@@ -216,21 +211,24 @@ async function handleRequest(req, res) {
   }
 
   if (route === "auth/login" && req.method === "POST") {
-    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
-      return send(res, 503, { error: "Admin sign-in is not configured. Set a private SESSION_SECRET of at least 32 characters in Vercel." });
-    }
     return handleLogin(req, res, sql);
   }
 
   if (route === "auth/logout" && req.method === "POST") {
     if (!sameOrigin(req)) return send(res, 403, { error: "Request origin was not accepted." });
+    const token = getCookie(req, SESSION_COOKIE);
+    const password = process.env.ADMIN_PASSWORD;
+    if (/^[A-Za-z0-9_-]{43}$/.test(token) && password && password.length >= 16) {
+      const tokenHash = createHmac("sha256", password).update(token).digest("hex");
+      await sql`DELETE FROM admin_sessions WHERE token_hash = ${tokenHash}`;
+    }
     setCookie(res, "", 0);
     return send(res, 200, { authenticated: false });
   }
 
   if (route === "admin/content" && req.method === "PUT") {
     if (!sameOrigin(req)) return send(res, 403, { error: "Request origin was not accepted." });
-    if (!verifySession(req)) return send(res, 401, { error: "Sign in to update portfolio content." });
+    if (!await verifySession(req, sql)) return send(res, 401, { error: "Sign in to update portfolio content." });
     const { content } = bodyOf(req);
     const serialized = JSON.stringify(content);
     if (!content || typeof content !== "object" || !contentMatchesShape(content, defaults) ||
@@ -244,7 +242,7 @@ async function handleRequest(req, res) {
   }
 
   if (route === "admin/messages" && req.method === "GET") {
-    if (!verifySession(req)) return send(res, 401, { error: "Sign in to view contact messages." });
+    if (!await verifySession(req, sql)) return send(res, 401, { error: "Sign in to view contact messages." });
     const result = await sql`SELECT id, email, message, created_at AS "createdAt", is_read AS "read"
       FROM contact_messages ORDER BY created_at DESC`;
     return send(res, 200, { messages: result });
@@ -253,7 +251,7 @@ async function handleRequest(req, res) {
   const messageMatch = route.match(/^admin\/messages\/([0-9a-f-]{36})$/i);
   if (messageMatch && (req.method === "PATCH" || req.method === "DELETE")) {
     if (!sameOrigin(req)) return send(res, 403, { error: "Request origin was not accepted." });
-    if (!verifySession(req)) return send(res, 401, { error: "Sign in to manage contact messages." });
+    if (!await verifySession(req, sql)) return send(res, 401, { error: "Sign in to manage contact messages." });
     const id = messageMatch[1];
     if (req.method === "DELETE") {
       const result = await sql`DELETE FROM contact_messages WHERE id = ${id} RETURNING id`;
