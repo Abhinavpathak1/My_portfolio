@@ -26,6 +26,22 @@
   let messages = [];
   let currentView = "overview";
 
+  function errorMessage(value, fallback) {
+    if (typeof value === "string" && value.trim()) return value;
+    if (value instanceof Error && value.message) return value.message;
+    if (value && typeof value === "object") {
+      for (const key of ["message", "error", "detail", "details"]) {
+        if (value[key] !== undefined) {
+          const message = errorMessage(value[key], "");
+          if (message) return message;
+        }
+      }
+      const serialized = JSON.stringify(value);
+      if (serialized && serialized !== "{}") return serialized;
+    }
+    return fallback;
+  }
+
   async function apiRequest(path, options = {}) {
     const response = await fetch(path, {
       credentials: "same-origin",
@@ -38,7 +54,7 @@
     } catch {
       throw new Error("The server returned an invalid response. Make sure the admin API is deployed.");
     }
-    if (!response.ok) throw new Error(result.error || "The request could not be completed.");
+    if (!response.ok) throw new Error(errorMessage(result.error, "The request could not be completed."));
     return result;
   }
 
@@ -258,7 +274,7 @@
       const session = await apiRequest("/api/auth/session");
       if (session.authenticated) await showDashboard(session.email);
     } catch (error) {
-      authMessage.textContent = `Unable to check admin sign-in: ${error.message}`;
+      authMessage.textContent = `Unable to check admin sign-in: ${errorMessage(error, "The request could not be completed.")}`;
     }
   }
 
@@ -277,7 +293,7 @@
       authForm.reset();
       await showDashboard(session.email);
     } catch (error) {
-      authMessage.textContent = error.message || "Unable to sign in.";
+      authMessage.textContent = errorMessage(error, "Unable to sign in.");
     } finally {
       authSubmit.disabled = false;
     }
@@ -374,7 +390,7 @@
       authMessage.textContent = "";
       showDashboardStatus("");
     } catch (error) {
-      showDashboardStatus(`Unable to sign out: ${error.message}`);
+      showDashboardStatus(`Unable to sign out: ${errorMessage(error, "The request could not be completed.")}`);
     } finally {
       button.disabled = false;
     }

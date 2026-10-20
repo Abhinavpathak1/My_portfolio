@@ -5,6 +5,21 @@
   }
   if (!root) return;
   root.portfolioDefaults = defaults;
+  function errorMessage(value, fallback) {
+    if (typeof value === "string" && value.trim()) return value;
+    if (value instanceof Error && value.message) return value.message;
+    if (value && typeof value === "object") {
+      for (const key of ["message", "error", "detail", "details"]) {
+        if (value[key] !== undefined) {
+          const message = errorMessage(value[key], "");
+          if (message) return message;
+        }
+      }
+      const serialized = JSON.stringify(value);
+      if (serialized && serialized !== "{}") return serialized;
+    }
+    return fallback;
+  }
   async function readResponse(response) {
     let result;
     try {
@@ -12,7 +27,7 @@
     } catch {
       throw new Error("The server returned an invalid response. Make sure the portfolio API is deployed.");
     }
-    if (!response.ok) throw new Error(result.error || "The server could not complete the request.");
+    if (!response.ok) throw new Error(errorMessage(result.error, "The server could not complete the request."));
     return result;
   }
   root.loadPortfolioData = async function () {

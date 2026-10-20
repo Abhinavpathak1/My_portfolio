@@ -178,13 +178,20 @@ async function handleRequest(req, res) {
     return;
   }
 
-  const sql = getDatabase();
-  await ensureSchema(sql);
-
   if ((route.startsWith("auth/") || route.startsWith("admin/")) &&
       (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
     return send(res, 503, { error: "Admin sign-in is not configured. Set a private SESSION_SECRET of at least 32 characters in Vercel." });
   }
+
+  if (route === "auth/session" && req.method === "GET") {
+    const session = verifySession(req);
+    return send(res, 200, session
+      ? { authenticated: true, email: session.email }
+      : { authenticated: false });
+  }
+
+  const sql = getDatabase();
+  await ensureSchema(sql);
 
   if (route === "content" && req.method === "GET") {
     const result = await sql`SELECT content FROM portfolio_content WHERE id = 1`;
@@ -209,13 +216,6 @@ async function handleRequest(req, res) {
       return send(res, 503, { error: "Admin sign-in is not configured. Set a private SESSION_SECRET of at least 32 characters in Vercel." });
     }
     return handleLogin(req, res, sql);
-  }
-
-  if (route === "auth/session" && req.method === "GET") {
-    const session = verifySession(req);
-    return send(res, 200, session
-      ? { authenticated: true, email: session.email }
-      : { authenticated: false });
   }
 
   if (route === "auth/logout" && req.method === "POST") {
